@@ -109,6 +109,19 @@ Value *VariableExprAST::codegen(driver& drv) {
   return builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
 }
 
+/************************* Global Variable Ecpression Tree *************************/
+GlobalVarExprAST::GlobalVarExprAST(const std::string Name):
+  Name(Name) {};
+   
+const std::string& GlobalVarExprAST::getName() const { 
+   return Name; 
+};
+
+GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
+  GlobalVariable globalvar = GlobalVariable(*module, Type::getDoubleTy(*context), false, GlobalValue::CommonLinkage, nullptr, Name);
+  return &globalvar;
+};
+
 /******************** Binary Expression Tree **********************/
 BinaryExprAST::BinaryExprAST(char Op, ExprAST* LHS, ExprAST* RHS):
   Op(Op), LHS(LHS), RHS(RHS) {};
@@ -265,8 +278,8 @@ Value* IfExprAST::codegen(driver& drv) {
 };
 
 /********************** Block Expression Tree *********************/
-BlockExprAST::BlockExprAST(std::vector<VarBindingAST*> Def, ExprAST* Val): 
-         Def(std::move(Def)), Val(Val) {};
+BlockExprAST::BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<RootAST*> Stmt): 
+         Def(std::move(Def)), Stmt(std::move(Stmt)) {};
 
 Value* BlockExprAST::codegen(driver& drv) {
    // Un blocco è un'espressione preceduta dalla definizione di una o più variabili locali.
@@ -293,6 +306,7 @@ Value* BlockExprAST::codegen(driver& drv) {
    //    al riguardo il vettore di appoggio "AllocaTmp" (che naturalmente è un vettore di
    //    di (puntatori ad) istruzioni di allocazione
    std::vector<AllocaInst*> AllocaTmp;
+   //#CHECK
    for (int i=0, e=Def.size(); i<e; i++) {
       // Per ogni definizione di variabile si genera il corrispondente codice che
       // (in questo caso) non restituisce un registro SSA ma l'istruzione di allocazione
@@ -307,7 +321,10 @@ Value* BlockExprAST::codegen(driver& drv) {
    // Ora (ed è la parte più "facile" da capire) viene generato il codice che
    // valuta l'espressione. Eventuali riferimenti a variabili vengono risolti
    // nella symbol table appena modificata
-   Value *blockvalue = Val->codegen(drv);
+   for (int i=0, e=Stmt.size()-1; i<e; i++)
+      Stmt[i]->codegen(drv);
+   
+   Value *blockvalue = Stmt[Stmt.size()-1]->codegen(drv);
       if (!blockvalue)
          return nullptr;
    // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
@@ -323,37 +340,28 @@ Value* BlockExprAST::codegen(driver& drv) {
 AssignmentAST::AssignmentAST(const std::string Name, ExprAST* Val): 
          Name(Name), Val(Val) {};
 
-const std::string& VarBindingAST::getName() const { 
+const std::string& AssignmentAST::getName() const { 
    return Name; 
 };
 
 Value* AssignmentAST::codegen(driver& drv) {
    
-   std::vector<AllocaInst*> AllocaTmp;
-   for (int i=0, e=Def.size(); i<e; i++) {
-      // Per ogni definizione di variabile si genera il corrispondente codice che
-      // (in questo caso) non restituisce un registro SSA ma l'istruzione di allocazione
-      AllocaInst *boundval = Def[i]->codegen(drv);
-      if (!boundval) 
-         return nullptr;
-      // Viene temporaneamente rimossa la precedente istruzione di allocazione
-      // della stessa variabile (nome) e inserita quella corrente
-      AllocaTmp.push_back(drv.NamedValues[Def[i]->getName()]);
-      drv.NamedValues[Def[i]->getName()] = boundval;
-   };
-   // Ora (ed è la parte più "facile" da capire) viene generato il codice che
-   // valuta l'espressione. Eventuali riferimenti a variabili vengono risolti
-   // nella symbol table appena modificata
-   Value *blockvalue = Val->codegen(drv);
-      if (!blockvalue)
-         return nullptr;
-   // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
-   for (int i=0, e=Def.size(); i<e; i++) {
-        drv.NamedValues[Def[i]->getName()] = AllocaTmp[i];
-   };
-   // Il valore del costrutto/espressione var è ovviamente il valore (il registro SSA)
-   // restituito dal codice di valutazione dell'espressione
-   return blockvalue;
+   Value *BoundVal;
+   BoundVal = Val->codegen(drv);
+   if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
+     return nullptr;
+
+   AllocaInst *AllocaTmp = drv.NamedValues[Name];
+   if (!AllocaTmp){
+    GlobalVariable *GlobalTmp = module->getNamedGlobal(Name);
+    if(!GlobalTmp)
+      return LogErrorV("Variabile "+Name+" non definita");
+
+    builder->CreateStore(BoundVal, GlobalTmp);
+   } else
+      builder->CreateStore(BoundVal, AllocaTmp);
+    
+   return BoundVal; 
 };
 
 /************************* Var binding Tree *************************/
@@ -379,7 +387,7 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
     if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
       return nullptr;
    }
-   // Se tutto ok, si genera l'struzione che alloca memoria per la varibile ...
+   // Se tutto ok, si genera l'struzione che alloca memoria per la variabile ...
    AllocaInst *Alloca = CreateEntryBlockAlloca(fun, Name);
    // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
    // ovvero il contenuto del registro BoundVal
@@ -390,20 +398,6 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
    // allocata) viene restituita per essere inserita nella symbol table
    return Alloca;
 };
-
-/************************* Global Var Tree *************************/
-GlobalVarAST::GlobalVarAST(const std::string Name):
-  Name(Name) {};
-   
-const std::string& GlobalVarAST::getName() const { 
-   return Name; 
-};
-
-GlobalVariable *GlobalVarAST::codegen(driver& drv) {
-  GlobalVariable globalvar = GlobalVariable(*module, Type::getDoubleTy(*context), false, GlobalValue::CommonLinkage, nullptr, Name);
-  return &globalvar;
-};
-
 
 
 /************************* Prototype Tree *************************/

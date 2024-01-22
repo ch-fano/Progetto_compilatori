@@ -88,7 +88,7 @@ public:
   Value *codegen(driver& drv) override;
 };
 
-/// VariableExprAST - Classe per la rappresentazione di riferimenti a variabili
+/// VariableExprAST - Classe per la rappresentazione di riferimenti a variabili locali
 class VariableExprAST : public ExprAST {
 private:
   std::string Name;
@@ -97,6 +97,16 @@ public:
   VariableExprAST(const std::string &Name);
   lexval getLexVal() const override;
   Value *codegen(driver& drv) override;
+};
+
+/// GlobalVarExprAST - classe per la rappresentazione di riferimenti a variabili globali
+class GlobalVarExprAST: public ExprAST {
+private:
+  const std::string Name;
+public:
+  GlobalVarExprAST(const std::string Name);
+  GlobalVariable *codegen(driver& drv) override;
+  const std::string& getName() const;
 };
 
 /// BinaryExprAST - Classe per la rappresentazione di operatori binari
@@ -138,9 +148,9 @@ public:
 class BlockExprAST : public ExprAST {
 private:
   std::vector<VarBindingAST*> Def;
-  ExprAST* Val;
+  std::vector<RootAST*> Stmt;
 public:
-  BlockExprAST(std::vector<VarBindingAST*> Def, ExprAST* Val);
+  BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<RootAST*> Stmt);
   Value *codegen(driver& drv) override;
 }; 
 
@@ -194,15 +204,6 @@ private:
 public:
   FunctionAST(PrototypeAST* Proto, ExprAST* Body);
   Function *codegen(driver& drv) override;
-};
-
-class GlobalVarAST: public RootAST {
-private:
-  const std::string Name;
-public:
-  GlobalVarAST(const std::string Name);
-  GlobalVariable *codegen(driver& drv) override;
-  const std::string& getName() const;
 };
 
 #endif // ! DRIVER_HH

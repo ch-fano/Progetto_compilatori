@@ -21,7 +21,7 @@
   class PrototypeAST;
   class BlockExprAST;
   class VarBindingAST;
-  class GlobalVarAST;
+  class GlobalVarExprAST;
   class AssignmentAST;
 }
 
@@ -75,14 +75,14 @@
 %type <PrototypeAST*> external
 %type <PrototypeAST*> proto
 %type <std::vector<std::string>> idseq
-%type <BlockExprAST*> block     #TODO
+%type <BlockExprAST*> block    
 %type <std::vector<VarBindingAST*>> vardefs
 %type <VarBindingAST*> binding
-%type <GlobalVarAST*> globalvar
-%type <std::vector<RootAST>> stmts
-%type <RootAST*> stmt #CHECK
+%type <GlobalVarExprAST*> globalvar
+%type <std::vector<RootAST*>> stmts
+%type <RootAST*> stmt 
 %type <AssignmentAST*> assignment
-%type initexp #TODO
+%type <ExprAST*> initexp
 
 
 %%
@@ -111,7 +111,7 @@ proto:
   "id" "(" idseq ")"    { $$ = new PrototypeAST($1,$3);  };
 
 gloablvar:
-  "global" "id"         { $$ = new GlobalVarAST($2); }
+  "global" "id"         { $$ = new GlobalVarExprAST($2); }
 
 idseq:
   %empty                { std::vector<std::string> args;
@@ -119,11 +119,11 @@ idseq:
 | "id" idseq            { $2.insert($2.begin(),$1); $$ = $2; };
 
 stmts:
-  stmt                  { std::vector<RootAST> statements;
+  stmt                  { std::vector<RootAST*> statements;
                             statements.push_back($1);
                             $$ = statements; }
 | stmt ";" stmts        { $3.push_back($1); 
-                            $$ = $3; } #CHECK
+                            $$ = $3; } 
 
 stmt:
   assignment            { $$ = $1; }
@@ -149,8 +149,8 @@ exp:
 | expif                 { $$ = $1; };
 
 block:
-  "{" stmts "}"             {#TODO}
-| "{" vardefs ";" stmts "}" { $$ = new BlockExprAST($2,$4); } #TODO
+  "{" stmts "}"             { $$ = new BlockExprAST(nullptr,$1); }
+| "{" vardefs ";" stmts "}" { $$ = new BlockExprAST($2,$4); }
   
 vardefs:
   binding                 { std::vector<VarBindingAST*> definitions;
@@ -160,7 +160,7 @@ vardefs:
                             $$ = $1; }
                             
 binding:
-  "var" "id" initexp      { $$ = new VarBindingAST($2,$3); } #CHECK
+  "var" "id" initexp      { $$ = new VarBindingAST($2,$3); } 
 
 initexp:
   %empty                  { $$ = nullptr; }
