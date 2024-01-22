@@ -319,6 +319,43 @@ Value* BlockExprAST::codegen(driver& drv) {
    return blockvalue;
 };
 
+/********************** Assignment Tree *********************/
+AssignmentAST::AssignmentAST(const std::string Name, ExprAST* Val): 
+         Name(Name), Val(Val) {};
+
+const std::string& VarBindingAST::getName() const { 
+   return Name; 
+};
+
+Value* AssignmentAST::codegen(driver& drv) {
+   
+   std::vector<AllocaInst*> AllocaTmp;
+   for (int i=0, e=Def.size(); i<e; i++) {
+      // Per ogni definizione di variabile si genera il corrispondente codice che
+      // (in questo caso) non restituisce un registro SSA ma l'istruzione di allocazione
+      AllocaInst *boundval = Def[i]->codegen(drv);
+      if (!boundval) 
+         return nullptr;
+      // Viene temporaneamente rimossa la precedente istruzione di allocazione
+      // della stessa variabile (nome) e inserita quella corrente
+      AllocaTmp.push_back(drv.NamedValues[Def[i]->getName()]);
+      drv.NamedValues[Def[i]->getName()] = boundval;
+   };
+   // Ora (ed è la parte più "facile" da capire) viene generato il codice che
+   // valuta l'espressione. Eventuali riferimenti a variabili vengono risolti
+   // nella symbol table appena modificata
+   Value *blockvalue = Val->codegen(drv);
+      if (!blockvalue)
+         return nullptr;
+   // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
+   for (int i=0, e=Def.size(); i<e; i++) {
+        drv.NamedValues[Def[i]->getName()] = AllocaTmp[i];
+   };
+   // Il valore del costrutto/espressione var è ovviamente il valore (il registro SSA)
+   // restituito dal codice di valutazione dell'espressione
+   return blockvalue;
+};
+
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
    Name(Name), Val(Val) {};
@@ -353,6 +390,21 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
    // allocata) viene restituita per essere inserita nella symbol table
    return Alloca;
 };
+
+/************************* Global Var Tree *************************/
+GlobalVarAST::GlobalVarAST(const std::string Name):
+  Name(Name) {};
+   
+const std::string& GlobalVarAST::getName() const { 
+   return Name; 
+};
+
+GlobalVariable *GlobalVarAST::codegen(driver& drv) {
+  GlobalVariable globalvar = GlobalVariable(*module, Type::getDoubleTy(*context), false, GlobalValue::CommonLinkage, nullptr, Name);
+  return &globalvar;
+};
+
+
 
 /************************* Prototype Tree *************************/
 PrototypeAST::PrototypeAST(std::string Name, std::vector<std::string> Args):

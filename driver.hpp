@@ -144,6 +144,18 @@ public:
   Value *codegen(driver& drv) override;
 }; 
 
+/// AssignmentAST
+class AssignmentAST : public RootAST {
+private:
+  const std::string Name;
+  ExprAST* Val;
+public:
+  AssignmentAST(const std::string Name, ExprAST* Val);
+  Value *codegen(driver& drv) override;
+  const std::string& getName() const;
+};
+
+
 /// VarBindingAST
 class VarBindingAST: public RootAST {
 private:
@@ -187,10 +199,9 @@ public:
 class GlobalVarAST: public RootAST {
 private:
   const std::string Name;
-  ExprAST* Val;
 public:
-  GlobalVarAST(const std::string Name, ExprAST* Val);
-  AllocaInst *codegen(driver& drv) override;
+  GlobalVarAST(const std::string Name);
+  GlobalVariable *codegen(driver& drv) override;
   const std::string& getName() const;
 };
 

@@ -21,6 +21,8 @@
   class PrototypeAST;
   class BlockExprAST;
   class VarBindingAST;
+  class GlobalVarAST;
+  class AssignmentAST;
 }
 
 // The parsing context.
@@ -77,9 +79,9 @@
 %type <std::vector<VarBindingAST*>> vardefs
 %type <VarBindingAST*> binding
 %type <GlobalVarAST*> globalvar
-%type stmts #TODO
-%type stmt #TODO
-%type assignment #TODO
+%type <std::vector<RootAST>> stmts
+%type <RootAST*> stmt #CHECK
+%type <AssignmentAST*> assignment
 %type initexp #TODO
 
 
@@ -109,7 +111,7 @@ proto:
   "id" "(" idseq ")"    { $$ = new PrototypeAST($1,$3);  };
 
 gloablvar:
-  "global" "id"         {#TODO}
+  "global" "id"         { $$ = new GlobalVarAST($2); }
 
 idseq:
   %empty                { std::vector<std::string> args;
@@ -117,8 +119,11 @@ idseq:
 | "id" idseq            { $2.insert($2.begin(),$1); $$ = $2; };
 
 stmts:
-  stmt                  {#TODO} <- vettore di statement
-| stmt ";" stmts        {#TODO} <- inserimento nel vettore
+  stmt                  { std::vector<RootAST> statements;
+                            statements.push_back($1);
+                            $$ = statements; }
+| stmt ";" stmts        { $3.push_back($1); 
+                            $$ = $3; } #CHECK
 
 stmt:
   assignment            { $$ = $1; }
@@ -126,7 +131,7 @@ stmt:
 | exp                   { $$ = $1; }
 
 assignment:
-  "id" "=" exp          {#TODO}
+  "id" "=" exp          { $$ = new AssignmentAST($1, $3); }
 
 %left ":";
 %left "<" "==";
