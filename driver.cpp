@@ -123,7 +123,7 @@ const std::string& GlobalVarExprAST::getName() const {
 
 GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
   GlobalVariable globalvar = GlobalVariable(*module, Type::getDoubleTy(*context), false, GlobalValue::CommonLinkage, nullptr, Name);
-  return &globalvar;
+  return module->getNamedGlobal(Name);
 };
 
 /******************** Binary Expression Tree **********************/
