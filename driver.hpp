@@ -88,7 +88,7 @@ public:
   Value *codegen(driver& drv) override;
 };
 
-/// VariableExprAST - Classe per la rappresentazione di riferimenti a variabili locali
+/// VariableExprAST - Classe per la rappresentazione di riferimenti a variabili 
 class VariableExprAST : public ExprAST {
 private:
   std::string Name;

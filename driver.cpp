@@ -104,8 +104,12 @@ lexval VariableExprAST::getLexVal() const {
 // il nome del registro in cui verrà trasferito il valore dalla memoria
 Value *VariableExprAST::codegen(driver& drv) {
   AllocaInst *A = drv.NamedValues[Name];
-  if (!A)
-     return LogErrorV("Variabile "+Name+" non definita");
+  if (!A){
+     GlobalVariable *B = module->getNamedGlobal(Name);
+     if(!B)
+      return LogErrorV("Variabile "+Name+" non definita");
+     return builder->CreateLoad(B->getValueType(), B, Name.c_str());
+  }
   return builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
 }
 
@@ -382,7 +386,7 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
    Function *fun = builder->GetInsertBlock()->getParent();
    // Ora viene generato il codice che definisce il valore della variabile
    Value *BoundVal;
-   if(!Val){
+   if(Val){
     BoundVal = Val->codegen(drv);
     if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
       return nullptr;
@@ -391,7 +395,7 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
    AllocaInst *Alloca = CreateEntryBlockAlloca(fun, Name);
    // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
    // ovvero il contenuto del registro BoundVal
-   if(!Val)
+   if(Val)
     builder->CreateStore(BoundVal, Alloca);
    
    // L'istruzione di allocazione (che include il registro "puntatore" all'area di memoria

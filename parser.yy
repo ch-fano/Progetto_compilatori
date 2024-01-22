@@ -110,7 +110,7 @@ external:
 proto:
   "id" "(" idseq ")"    { $$ = new PrototypeAST($1,$3);  };
 
-gloablvar:
+globalvar:
   "global" "id"         { $$ = new GlobalVarExprAST($2); }
 
 idseq:
@@ -149,7 +149,8 @@ exp:
 | expif                 { $$ = $1; };
 
 block:
-  "{" stmts "}"             { $$ = new BlockExprAST(nullptr,$1); }
+  "{" stmts "}"             { std::vector<VarBindingAST *> def;
+                      $$ = new BlockExprAST( def,$2); }
 | "{" vardefs ";" stmts "}" { $$ = new BlockExprAST($2,$4); }
   
 vardefs:

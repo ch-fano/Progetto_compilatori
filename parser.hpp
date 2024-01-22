@@ -60,8 +60,10 @@
   class PrototypeAST;
   class BlockExprAST;
   class VarBindingAST;
+  class GlobalVarExprAST;
+  class AssignmentAST;
 
-#line 65 "parser.hpp"
+#line 67 "parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -201,7 +203,7 @@
 #endif
 
 namespace yy {
-#line 205 "parser.hpp"
+#line 207 "parser.hpp"
 
 
   /// A point in a source file.
@@ -661,44 +663,55 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // blockexp
-      char dummy1[sizeof (BlockExprAST*)];
+      // assignment
+      char dummy1[sizeof (AssignmentAST*)];
+
+      // block
+      char dummy2[sizeof (BlockExprAST*)];
 
       // exp
+      // initexp
       // expif
       // condexp
       // idexp
-      char dummy2[sizeof (ExprAST*)];
+      char dummy3[sizeof (ExprAST*)];
 
       // definition
-      char dummy3[sizeof (FunctionAST*)];
+      char dummy4[sizeof (FunctionAST*)];
+
+      // globalvar
+      char dummy5[sizeof (GlobalVarExprAST*)];
 
       // external
       // proto
-      char dummy4[sizeof (PrototypeAST*)];
+      char dummy6[sizeof (PrototypeAST*)];
 
       // program
       // top
-      char dummy5[sizeof (RootAST*)];
+      // stmt
+      char dummy7[sizeof (RootAST*)];
 
       // binding
-      char dummy6[sizeof (VarBindingAST*)];
+      char dummy8[sizeof (VarBindingAST*)];
 
       // "number"
-      char dummy7[sizeof (double)];
+      char dummy9[sizeof (double)];
 
       // "id"
-      char dummy8[sizeof (std::string)];
+      char dummy10[sizeof (std::string)];
 
       // optexp
       // explist
-      char dummy9[sizeof (std::vector<ExprAST*>)];
+      char dummy11[sizeof (std::vector<ExprAST*>)];
+
+      // stmts
+      char dummy12[sizeof (std::vector<RootAST*>)];
 
       // vardefs
-      char dummy10[sizeof (std::vector<VarBindingAST*>)];
+      char dummy13[sizeof (std::vector<VarBindingAST*>)];
 
       // idseq
-      char dummy11[sizeof (std::vector<std::string>)];
+      char dummy14[sizeof (std::vector<std::string>)];
     };
 
     /// The size of the largest semantic type.
@@ -769,8 +782,9 @@ namespace yy {
     TOK_EXTERN = 273,              // "extern"
     TOK_DEF = 274,                 // "def"
     TOK_VAR = 275,                 // "var"
-    TOK_IDENTIFIER = 276,          // "id"
-    TOK_NUMBER = 277               // "number"
+    TOK_GLOBAL = 276,              // "global"
+    TOK_IDENTIFIER = 277,          // "id"
+    TOK_NUMBER = 278               // "number"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -787,7 +801,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 23, ///< Number of tokens.
+        YYNTOKENS = 24, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -810,25 +824,31 @@ namespace yy {
         S_EXTERN = 18,                           // "extern"
         S_DEF = 19,                              // "def"
         S_VAR = 20,                              // "var"
-        S_IDENTIFIER = 21,                       // "id"
-        S_NUMBER = 22,                           // "number"
-        S_YYACCEPT = 23,                         // $accept
-        S_startsymb = 24,                        // startsymb
-        S_program = 25,                          // program
-        S_top = 26,                              // top
-        S_definition = 27,                       // definition
-        S_external = 28,                         // external
-        S_proto = 29,                            // proto
-        S_idseq = 30,                            // idseq
-        S_exp = 31,                              // exp
-        S_blockexp = 32,                         // blockexp
-        S_vardefs = 33,                          // vardefs
-        S_binding = 34,                          // binding
-        S_expif = 35,                            // expif
-        S_condexp = 36,                          // condexp
-        S_idexp = 37,                            // idexp
-        S_optexp = 38,                           // optexp
-        S_explist = 39                           // explist
+        S_GLOBAL = 21,                           // "global"
+        S_IDENTIFIER = 22,                       // "id"
+        S_NUMBER = 23,                           // "number"
+        S_YYACCEPT = 24,                         // $accept
+        S_startsymb = 25,                        // startsymb
+        S_program = 26,                          // program
+        S_top = 27,                              // top
+        S_definition = 28,                       // definition
+        S_external = 29,                         // external
+        S_proto = 30,                            // proto
+        S_globalvar = 31,                        // globalvar
+        S_idseq = 32,                            // idseq
+        S_stmts = 33,                            // stmts
+        S_stmt = 34,                             // stmt
+        S_assignment = 35,                       // assignment
+        S_exp = 36,                              // exp
+        S_block = 37,                            // block
+        S_vardefs = 38,                          // vardefs
+        S_binding = 39,                          // binding
+        S_initexp = 40,                          // initexp
+        S_expif = 41,                            // expif
+        S_condexp = 42,                          // condexp
+        S_idexp = 43,                            // idexp
+        S_optexp = 44,                           // optexp
+        S_explist = 45                           // explist
       };
     };
 
@@ -865,11 +885,16 @@ namespace yy {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_blockexp: // blockexp
+      case symbol_kind::S_assignment: // assignment
+        value.move< AssignmentAST* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_block: // block
         value.move< BlockExprAST* > (std::move (that.value));
         break;
 
       case symbol_kind::S_exp: // exp
+      case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
       case symbol_kind::S_idexp: // idexp
@@ -880,6 +905,10 @@ namespace yy {
         value.move< FunctionAST* > (std::move (that.value));
         break;
 
+      case symbol_kind::S_globalvar: // globalvar
+        value.move< GlobalVarExprAST* > (std::move (that.value));
+        break;
+
       case symbol_kind::S_external: // external
       case symbol_kind::S_proto: // proto
         value.move< PrototypeAST* > (std::move (that.value));
@@ -887,6 +916,7 @@ namespace yy {
 
       case symbol_kind::S_program: // program
       case symbol_kind::S_top: // top
+      case symbol_kind::S_stmt: // stmt
         value.move< RootAST* > (std::move (that.value));
         break;
 
@@ -905,6 +935,10 @@ namespace yy {
       case symbol_kind::S_optexp: // optexp
       case symbol_kind::S_explist: // explist
         value.move< std::vector<ExprAST*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_stmts: // stmts
+        value.move< std::vector<RootAST*> > (std::move (that.value));
         break;
 
       case symbol_kind::S_vardefs: // vardefs
@@ -934,6 +968,20 @@ namespace yy {
 #else
       basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, AssignmentAST*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const AssignmentAST*& v, const location_type& l)
+        : Base (t)
+        , value (v)
         , location (l)
       {}
 #endif
@@ -974,6 +1022,20 @@ namespace yy {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const FunctionAST*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, GlobalVarExprAST*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const GlobalVarExprAST*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1065,6 +1127,20 @@ namespace yy {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<RootAST*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<RootAST*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<VarBindingAST*>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -1116,11 +1192,16 @@ namespace yy {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_blockexp: // blockexp
+      case symbol_kind::S_assignment: // assignment
+        value.template destroy< AssignmentAST* > ();
+        break;
+
+      case symbol_kind::S_block: // block
         value.template destroy< BlockExprAST* > ();
         break;
 
       case symbol_kind::S_exp: // exp
+      case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
       case symbol_kind::S_idexp: // idexp
@@ -1131,6 +1212,10 @@ switch (yykind)
         value.template destroy< FunctionAST* > ();
         break;
 
+      case symbol_kind::S_globalvar: // globalvar
+        value.template destroy< GlobalVarExprAST* > ();
+        break;
+
       case symbol_kind::S_external: // external
       case symbol_kind::S_proto: // proto
         value.template destroy< PrototypeAST* > ();
@@ -1138,6 +1223,7 @@ switch (yykind)
 
       case symbol_kind::S_program: // program
       case symbol_kind::S_top: // top
+      case symbol_kind::S_stmt: // stmt
         value.template destroy< RootAST* > ();
         break;
 
@@ -1156,6 +1242,10 @@ switch (yykind)
       case symbol_kind::S_optexp: // optexp
       case symbol_kind::S_explist: // explist
         value.template destroy< std::vector<ExprAST*> > ();
+        break;
+
+      case symbol_kind::S_stmts: // stmts
+        value.template destroy< std::vector<RootAST*> > ();
         break;
 
       case symbol_kind::S_vardefs: // vardefs
@@ -1264,7 +1354,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOK_END
-                   || (token::TOK_YYerror <= tok && tok <= token::TOK_VAR));
+                   || (token::TOK_YYerror <= tok && tok <= token::TOK_GLOBAL));
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1657,6 +1747,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_GLOBAL (location_type l)
+      {
+        return symbol_type (token::TOK_GLOBAL, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_GLOBAL (const location_type& l)
+      {
+        return symbol_type (token::TOK_GLOBAL, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_IDENTIFIER (std::string v, location_type l)
       {
         return symbol_type (token::TOK_IDENTIFIER, std::move (v), std::move (l));
@@ -2014,9 +2119,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 97,     ///< Last index in yytable_.
-      yynnts_ = 17,  ///< Number of nonterminal symbols.
-      yyfinal_ = 11 ///< Termination state number.
+      yylast_ = 85,     ///< Last index in yytable_.
+      yynnts_ = 22,  ///< Number of nonterminal symbols.
+      yyfinal_ = 14 ///< Termination state number.
     };
 
 
@@ -2062,10 +2167,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22
+      15,    16,    17,    18,    19,    20,    21,    22,    23
     };
     // Last valid token kind.
-    const int code_max = 277;
+    const int code_max = 278;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2084,11 +2189,16 @@ switch (yykind)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_blockexp: // blockexp
+      case symbol_kind::S_assignment: // assignment
+        value.copy< AssignmentAST* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_block: // block
         value.copy< BlockExprAST* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_exp: // exp
+      case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
       case symbol_kind::S_idexp: // idexp
@@ -2099,6 +2209,10 @@ switch (yykind)
         value.copy< FunctionAST* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_globalvar: // globalvar
+        value.copy< GlobalVarExprAST* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_external: // external
       case symbol_kind::S_proto: // proto
         value.copy< PrototypeAST* > (YY_MOVE (that.value));
@@ -2106,6 +2220,7 @@ switch (yykind)
 
       case symbol_kind::S_program: // program
       case symbol_kind::S_top: // top
+      case symbol_kind::S_stmt: // stmt
         value.copy< RootAST* > (YY_MOVE (that.value));
         break;
 
@@ -2124,6 +2239,10 @@ switch (yykind)
       case symbol_kind::S_optexp: // optexp
       case symbol_kind::S_explist: // explist
         value.copy< std::vector<ExprAST*> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_stmts: // stmts
+        value.copy< std::vector<RootAST*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_vardefs: // vardefs
@@ -2165,11 +2284,16 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_blockexp: // blockexp
+      case symbol_kind::S_assignment: // assignment
+        value.move< AssignmentAST* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_block: // block
         value.move< BlockExprAST* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_exp: // exp
+      case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
       case symbol_kind::S_idexp: // idexp
@@ -2180,6 +2304,10 @@ switch (yykind)
         value.move< FunctionAST* > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_globalvar: // globalvar
+        value.move< GlobalVarExprAST* > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_external: // external
       case symbol_kind::S_proto: // proto
         value.move< PrototypeAST* > (YY_MOVE (s.value));
@@ -2187,6 +2315,7 @@ switch (yykind)
 
       case symbol_kind::S_program: // program
       case symbol_kind::S_top: // top
+      case symbol_kind::S_stmt: // stmt
         value.move< RootAST* > (YY_MOVE (s.value));
         break;
 
@@ -2205,6 +2334,10 @@ switch (yykind)
       case symbol_kind::S_optexp: // optexp
       case symbol_kind::S_explist: // explist
         value.move< std::vector<ExprAST*> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_stmts: // stmts
+        value.move< std::vector<RootAST*> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_vardefs: // vardefs
@@ -2281,7 +2414,7 @@ switch (yykind)
 
 
 } // yy
-#line 2285 "parser.hpp"
+#line 2418 "parser.hpp"
 
 
 
