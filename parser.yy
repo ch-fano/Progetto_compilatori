@@ -59,6 +59,9 @@
   DEF        "def"
   VAR        "var"
   GLOBAL     "global"
+  IF         "if"
+  ELSE       "else"
+  FOR        "for"
 ;
 
 %token <std::string> IDENTIFIER "id"
@@ -83,6 +86,9 @@
 %type <RootAST*> stmt 
 %type <AssignmentAST*> assignment
 %type <ExprAST*> initexp
+%type ifstmt #TODO
+%type forstmt #TODO
+%type init #TODO
 
 
 %%
@@ -128,7 +134,20 @@ stmts:
 stmt:
   assignment            { $$ = $1; }
 | block                 { $$ = $1; }
+| ifstmt                { $$ = $1; }
+| forstmt               { $$ = $1; }
 | exp                   { $$ = $1; }
+
+ifstmt:
+  "if" "(" condexp ")" stmt              { #TODO } 
+| "if" "(" condexp ")" stmt "else" stmt  { #TODO }
+
+forstmt:
+  "for" "(" init ";" condexp ";" assignment ")" stmt  { #TODO }
+
+init:
+  binding               { #TODO }
+| assignment            { #TODO }
 
 assignment:
   "id" "=" exp          { $$ = new AssignmentAST($1, $3); }
