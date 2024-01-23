@@ -122,8 +122,14 @@ const std::string& GlobalVarExprAST::getName() const {
 };
 
 GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
-  GlobalVariable globalvar = GlobalVariable(*module, Type::getDoubleTy(*context), false, GlobalValue::CommonLinkage, nullptr, Name);
-  return module->getNamedGlobal(Name);
+
+  GlobalValue::LinkageTypes linkage = GlobalValue::CommonLinkage;
+  GlobalVariable *globalvar = new GlobalVariable(*module, PointerType::getDoubleTy(*context), false, linkage, ConstantFP::getNullValue(Type::getDoubleTy(*context)), Name);
+
+  globalvar->print(errs());
+  fprintf(stderr, "\n");
+
+  return globalvar;
 };
 
 /******************** Binary Expression Tree **********************/
@@ -147,7 +153,7 @@ Value *BinaryExprAST::codegen(driver& drv) {
   case '*':
     return builder->CreateFMul(L,R,"mulres");
   case '/':
-    return builder->CreateFDiv(L,R,"addres");
+    return builder->CreateFDiv(L,R,"divres");
   case '<':
     return builder->CreateFCmpULT(L,R,"lttest");
   case '=':
@@ -310,7 +316,6 @@ Value* BlockExprAST::codegen(driver& drv) {
    //    al riguardo il vettore di appoggio "AllocaTmp" (che naturalmente è un vettore di
    //    di (puntatori ad) istruzioni di allocazione
    std::vector<AllocaInst*> AllocaTmp;
-   //#CHECK
    for (int i=0, e=Def.size(); i<e; i++) {
       // Per ogni definizione di variabile si genera il corrispondente codice che
       // (in questo caso) non restituisce un registro SSA ma l'istruzione di allocazione

@@ -938,7 +938,7 @@ namespace yy {
 
   case 16: // stmts: stmt ";" stmts
 #line 125 "parser.yy"
-                        { yystack_[0].value.as < std::vector<RootAST*> > ().push_back(yystack_[2].value.as < RootAST* > ()); 
+                        { yystack_[0].value.as < std::vector<RootAST*> > ().insert(yystack_[0].value.as < std::vector<RootAST*> > ().begin(), yystack_[2].value.as < RootAST* > ()); 
                             yylhs.value.as < std::vector<RootAST*> > () = yystack_[0].value.as < std::vector<RootAST*> > (); }
 #line 944 "parser.cpp"
     break;
