@@ -22,7 +22,7 @@
   class BlockExprAST;
   class VarBindingAST;
   class GlobalVarExprAST;
-  class AssignmentAST;
+  class AssignmentExprAST;
 }
 
 // The parsing context.
@@ -82,11 +82,11 @@
 %type <std::vector<VarBindingAST*>> vardefs
 %type <VarBindingAST*> binding
 %type <GlobalVarExprAST*> globalvar
-%type <std::vector<RootAST*>> stmts
+%type <std::vector<ExprAST*>> stmts
 %type <RootAST*> stmt 
-%type <AssignmentAST*> assignment
+%type <AssignmentExprAST*> assignment
 %type <ExprAST*> initexp
-%type ifstmt #TODO
+%type <IfExprAST> ifstmt
 %type forstmt #TODO
 %type init #TODO
 
@@ -125,7 +125,7 @@ idseq:
 | "id" idseq            { $2.insert($2.begin(),$1); $$ = $2; };
 
 stmts:
-  stmt                  { std::vector<RootAST*> statements;
+  stmt                  { std::vector<ExprAST*> statements;
                             statements.push_back($1);
                             $$ = statements; }
 | stmt ";" stmts        { $3.insert($3.begin(), $1); 
@@ -139,8 +139,8 @@ stmt:
 | exp                   { $$ = $1; }
 
 ifstmt:
-  "if" "(" condexp ")" stmt              { #TODO } 
-| "if" "(" condexp ")" stmt "else" stmt  { #TODO }
+  "if" "(" condexp ")" stmt              { $$ = new IfExprAST($3, $5, nullptr); } #CHECK
+| "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
 
 forstmt:
   "for" "(" init ";" condexp ";" assignment ")" stmt  { #TODO }
@@ -150,7 +150,7 @@ init:
 | assignment            { #TODO }
 
 assignment:
-  "id" "=" exp          { $$ = new AssignmentAST($1, $3); }
+  "id" "=" exp          { $$ = new AssignmentExprAST($1, $3); }
 
 %left ":";
 %left "<" "==";

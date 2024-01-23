@@ -148,19 +148,19 @@ public:
 class BlockExprAST : public ExprAST {
 private:
   std::vector<VarBindingAST*> Def;
-  std::vector<RootAST*> Stmt;
+  std::vector<ExprAST*> Stmt;
 public:
-  BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<RootAST*> Stmt);
+  BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<ExprAST*> Stmt);
   Value *codegen(driver& drv) override;
 }; 
 
 /// AssignmentAST
-class AssignmentAST : public RootAST {
+class AssignmentExprAST : public ExprAST {
 private:
   const std::string Name;
   ExprAST* Val;
 public:
-  AssignmentAST(const std::string Name, ExprAST* Val);
+  AssignmentExprAST(const std::string Name, ExprAST* Val);
   Value *codegen(driver& drv) override;
   const std::string& getName() const;
 };

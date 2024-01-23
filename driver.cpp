@@ -256,10 +256,16 @@ Value* IfExprAST::codegen(driver& drv) {
     // condizione falsa e, in chiusura di blocco, generiamo il saldo 
     // incondizionato al blocco merge
     builder->SetInsertPoint(FalseBB);
-    
-    Value *FalseV = FalseExp->codegen(drv);
-    if (!FalseV)
-       return nullptr;
+    Value *FalseV;
+
+    if(!FalseExp){  //#CHECK -> potrei proprio non creare il basic block per il ramo false
+      FalseV = FalseExp->codegen(drv);
+      if (!FalseV)
+        return nullptr;
+    }
+    else
+      FalseV = NumberExprAST(0.0).codegen(drv);
+
     builder->CreateBr(MergeBB);
     
     // Esattamente per la ragione spiegata sopra (ovvero il possibile inserimento
@@ -288,7 +294,7 @@ Value* IfExprAST::codegen(driver& drv) {
 };
 
 /********************** Block Expression Tree *********************/
-BlockExprAST::BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<RootAST*> Stmt): 
+BlockExprAST::BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<ExprAST*> Stmt): 
          Def(std::move(Def)), Stmt(std::move(Stmt)) {};
 
 Value* BlockExprAST::codegen(driver& drv) {
@@ -345,15 +351,15 @@ Value* BlockExprAST::codegen(driver& drv) {
    return blockvalue;
 };
 
-/********************** Assignment Tree *********************/
-AssignmentAST::AssignmentAST(const std::string Name, ExprAST* Val): 
+/********************** Assignment Expression Tree *********************/
+AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val): 
          Name(Name), Val(Val) {};
 
-const std::string& AssignmentAST::getName() const { 
+const std::string& AssignmentExprAST::getName() const { 
    return Name; 
 };
 
-Value* AssignmentAST::codegen(driver& drv) {
+Value* AssignmentExprAST::codegen(driver& drv) {
    
    Value *BoundVal;
    BoundVal = Val->codegen(drv);
