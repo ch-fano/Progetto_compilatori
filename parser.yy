@@ -23,6 +23,7 @@
   class VarBindingAST;
   class GlobalVarExprAST;
   class AssignmentExprAST;
+  class InitAST;
 }
 
 // The parsing context.
@@ -88,7 +89,7 @@
 %type <ExprAST*> initexp
 %type <IfExprAST> ifstmt
 %type forstmt #TODO
-%type init #TODO
+%type <InitAST*> init
 
 
 %%
@@ -146,8 +147,10 @@ forstmt:
   "for" "(" init ";" condexp ";" assignment ")" stmt  { #TODO }
 
 init:
-  binding               { #TODO }
-| assignment            { #TODO }
+  binding               { $1.setBinding(true);
+                          $$ = $1; }
+| assignment            { $1.setBinding(false);
+                          $$ = $1; }
 
 assignment:
   "id" "=" exp          { $$ = new AssignmentExprAST($1, $3); }

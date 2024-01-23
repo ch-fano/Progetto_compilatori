@@ -379,6 +379,14 @@ Value* AssignmentExprAST::codegen(driver& drv) {
    return BoundVal; 
 };
 
+/************************* Initialization Tree *************************/
+bool InitAST::getBinding(){
+  return binding;
+}
+void InitAST::setBinding(bool binding){
+  this->binding = binding;
+}
+
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
    Name(Name), Val(Val) {};

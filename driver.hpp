@@ -77,6 +77,15 @@ public:
 /// ExprAST - Classe base per tutti i nodi espressione
 class ExprAST : public RootAST {};
 
+/// InitAST - Classe base per tutti i nodi inizializzazione
+class InitAST : public virtual RootAST{
+  private:
+    bool binding = false;
+  public:
+    bool getBinding();
+    void setBinding(bool binding);
+};
+
 /// NumberExprAST - Classe per la rappresentazione di costanti numeriche
 class NumberExprAST : public ExprAST {
 private:
@@ -155,7 +164,7 @@ public:
 }; 
 
 /// AssignmentAST
-class AssignmentExprAST : public ExprAST {
+class AssignmentExprAST : public ExprAST, public InitAST {
 private:
   const std::string Name;
   ExprAST* Val;
@@ -167,7 +176,7 @@ public:
 
 
 /// VarBindingAST
-class VarBindingAST: public RootAST {
+class VarBindingAST: public InitAST {
 private:
   const std::string Name;
   ExprAST* Val;
