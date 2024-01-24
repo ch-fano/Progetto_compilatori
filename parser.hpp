@@ -65,8 +65,9 @@
   class InitAST;
   class IfExprAST;
   class ForExprAST;
+  class UnaryExprAST;
 
-#line 70 "parser.hpp"
+#line 71 "parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -206,7 +207,7 @@
 #endif
 
 namespace yy {
-#line 210 "parser.hpp"
+#line 211 "parser.hpp"
 
 
   /// A point in a source file.
@@ -787,17 +788,18 @@ namespace yy {
     TOK_LT = 268,                  // "<"
     TOK_EQ = 269,                  // "=="
     TOK_ASSIGN = 270,              // "="
-    TOK_LBRACE = 271,              // "{"
-    TOK_RBRACE = 272,              // "}"
-    TOK_EXTERN = 273,              // "extern"
-    TOK_DEF = 274,                 // "def"
-    TOK_VAR = 275,                 // "var"
-    TOK_GLOBAL = 276,              // "global"
-    TOK_IF = 277,                  // "if"
-    TOK_ELSE = 278,                // "else"
-    TOK_FOR = 279,                 // "for"
-    TOK_IDENTIFIER = 280,          // "id"
-    TOK_NUMBER = 281               // "number"
+    TOK_INCREASE = 271,            // "++"
+    TOK_LBRACE = 272,              // "{"
+    TOK_RBRACE = 273,              // "}"
+    TOK_EXTERN = 274,              // "extern"
+    TOK_DEF = 275,                 // "def"
+    TOK_VAR = 276,                 // "var"
+    TOK_GLOBAL = 277,              // "global"
+    TOK_IF = 278,                  // "if"
+    TOK_ELSE = 279,                // "else"
+    TOK_FOR = 280,                 // "for"
+    TOK_IDENTIFIER = 281,          // "id"
+    TOK_NUMBER = 282               // "number"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -814,7 +816,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 27, ///< Number of tokens.
+        YYNTOKENS = 28, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -832,42 +834,43 @@ namespace yy {
         S_LT = 13,                               // "<"
         S_EQ = 14,                               // "=="
         S_ASSIGN = 15,                           // "="
-        S_LBRACE = 16,                           // "{"
-        S_RBRACE = 17,                           // "}"
-        S_EXTERN = 18,                           // "extern"
-        S_DEF = 19,                              // "def"
-        S_VAR = 20,                              // "var"
-        S_GLOBAL = 21,                           // "global"
-        S_IF = 22,                               // "if"
-        S_ELSE = 23,                             // "else"
-        S_FOR = 24,                              // "for"
-        S_IDENTIFIER = 25,                       // "id"
-        S_NUMBER = 26,                           // "number"
-        S_YYACCEPT = 27,                         // $accept
-        S_startsymb = 28,                        // startsymb
-        S_program = 29,                          // program
-        S_top = 30,                              // top
-        S_definition = 31,                       // definition
-        S_external = 32,                         // external
-        S_proto = 33,                            // proto
-        S_globalvar = 34,                        // globalvar
-        S_idseq = 35,                            // idseq
-        S_stmts = 36,                            // stmts
-        S_stmt = 37,                             // stmt
-        S_ifstmt = 38,                           // ifstmt
-        S_forstmt = 39,                          // forstmt
-        S_init = 40,                             // init
-        S_assignment = 41,                       // assignment
-        S_exp = 42,                              // exp
-        S_block = 43,                            // block
-        S_vardefs = 44,                          // vardefs
-        S_binding = 45,                          // binding
-        S_initexp = 46,                          // initexp
-        S_expif = 47,                            // expif
-        S_condexp = 48,                          // condexp
-        S_idexp = 49,                            // idexp
-        S_optexp = 50,                           // optexp
-        S_explist = 51                           // explist
+        S_INCREASE = 16,                         // "++"
+        S_LBRACE = 17,                           // "{"
+        S_RBRACE = 18,                           // "}"
+        S_EXTERN = 19,                           // "extern"
+        S_DEF = 20,                              // "def"
+        S_VAR = 21,                              // "var"
+        S_GLOBAL = 22,                           // "global"
+        S_IF = 23,                               // "if"
+        S_ELSE = 24,                             // "else"
+        S_FOR = 25,                              // "for"
+        S_IDENTIFIER = 26,                       // "id"
+        S_NUMBER = 27,                           // "number"
+        S_YYACCEPT = 28,                         // $accept
+        S_startsymb = 29,                        // startsymb
+        S_program = 30,                          // program
+        S_top = 31,                              // top
+        S_definition = 32,                       // definition
+        S_external = 33,                         // external
+        S_proto = 34,                            // proto
+        S_globalvar = 35,                        // globalvar
+        S_idseq = 36,                            // idseq
+        S_stmts = 37,                            // stmts
+        S_stmt = 38,                             // stmt
+        S_ifstmt = 39,                           // ifstmt
+        S_forstmt = 40,                          // forstmt
+        S_init = 41,                             // init
+        S_assignment = 42,                       // assignment
+        S_exp = 43,                              // exp
+        S_block = 44,                            // block
+        S_vardefs = 45,                          // vardefs
+        S_binding = 46,                          // binding
+        S_initexp = 47,                          // initexp
+        S_expif = 48,                            // expif
+        S_condexp = 49,                          // condexp
+        S_idexp = 50,                            // idexp
+        S_optexp = 51,                           // optexp
+        S_explist = 52                           // explist
       };
     };
 
@@ -1737,6 +1740,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_INCREASE (location_type l)
+      {
+        return symbol_type (token::TOK_INCREASE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_INCREASE (const location_type& l)
+      {
+        return symbol_type (token::TOK_INCREASE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_LBRACE (location_type l)
       {
         return symbol_type (token::TOK_LBRACE, std::move (l));
@@ -2229,7 +2247,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 112,     ///< Last index in yytable_.
+      yylast_ = 118,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
       yyfinal_ = 14 ///< Termination state number.
     };
@@ -2278,10 +2296,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26
+      25,    26,    27
     };
     // Last valid token kind.
-    const int code_max = 281;
+    const int code_max = 282;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2543,7 +2561,7 @@ switch (yykind)
 
 
 } // yy
-#line 2547 "parser.hpp"
+#line 2565 "parser.hpp"
 
 
 

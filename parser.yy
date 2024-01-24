@@ -26,6 +26,7 @@
   class InitAST;
   class IfExprAST;
   class ForExprAST;
+  class UnaryExprAST;
 }
 
 // The parsing context.
@@ -56,6 +57,7 @@
   LT         "<"
   EQ         "=="
   ASSIGN     "="
+  INCREASE   "++"
   LBRACE     "{"
   RBRACE     "}"
   EXTERN     "extern"
@@ -156,6 +158,8 @@ init:
 
 assignment:
   "id" "=" exp          { $$ = new AssignmentExprAST($1, $3); }
+| "++" "id"             { ExprAST * expr = new UnaryExprAST("++", $2);
+                          $$ = new AssignmentExprAST($2, expr); }
 
 %left ":";
 %left "<" "==";

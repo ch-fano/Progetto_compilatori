@@ -133,6 +133,17 @@ public:
   Value *codegen(driver& drv) override;
 };
 
+/// UnaryExprAST - Classe per la rappresentazione di operatori unari
+class UnaryExprAST : public ExprAST {
+private:
+  const std::string Op;
+  const std::string Name;
+public:
+  UnaryExprAST(std::string Op, std::string Name);
+  Value *codegen(driver& drv) override;
+};
+
+
 /// CallExprAST - Classe per la rappresentazione di chiamate di funzione
 class CallExprAST : public ExprAST {
 private:

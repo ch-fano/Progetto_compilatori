@@ -162,6 +162,25 @@ Value *BinaryExprAST::codegen(driver& drv) {
     std::cout << Op << std::endl;
     return LogErrorV("Operatore binario non supportato");
   }
+}; 
+
+/******************** Unary Expression Tree **********************/
+UnaryExprAST::UnaryExprAST(std::string Op, std::string Name):
+  Op(Op), Name(Name) {};
+
+// La generazione del codice in questo caso è di facile comprensione.
+// Viene ricorsivamente generato il codice per recupare il valore della variabile e
+// costruita l'istruzione utilizzando l'opportuno operatore
+Value *UnaryExprAST::codegen(driver& drv) {
+  VariableExprAST *Var = new VariableExprAST(Name);
+  Value * VarV = Var->codegen(drv);
+  if (!VarV) 
+     return nullptr;
+
+  if(Op == "++")
+    return builder->CreateFAdd(VarV,NumberExprAST(1.0).codegen(drv),"addres");
+  else
+    return LogErrorV(Op+": Operatore unario non supportato");
 };
 
 /********************* Call Expression Tree ***********************/
@@ -299,10 +318,9 @@ ForExprAST::ForExprAST(InitAST* Init, ExprAST* Cond, AssignmentExprAST* Assignme
    
 Value* ForExprAST::codegen(driver& drv) {
 
+  AllocaInst* AllocaTmp;
   if(Init->getBinding()){
-    
-    AllocaInst* AllocaTmp;
-   
+
     AllocaInst *boundval = static_cast<AllocaInst *>(Init->codegen(drv));
     if (!boundval) 
         return nullptr;
@@ -312,8 +330,6 @@ Value* ForExprAST::codegen(driver& drv) {
     AllocaTmp= drv.NamedValues[Init->getName()];
     drv.NamedValues[Init->getName()] = boundval;
   
-    // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
-    drv.NamedValues[Init->getName()] = AllocaTmp;
    }
    else{
     Value* Val = Init->codegen(drv);
@@ -402,6 +418,10 @@ Value* ForExprAST::codegen(driver& drv) {
     PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
     PN->addIncoming(BodyV, CondBB);
     PN->addIncoming(NumberExprAST(1.0).codegen(drv), StartBB);
+
+    // Prima di uscire dal for, si ripristina lo scope esterno al costrutto
+    if(Init->getBinding())
+      drv.NamedValues[Init->getName()] = AllocaTmp;
     return PN;
 };
 
