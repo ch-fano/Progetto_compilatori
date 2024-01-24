@@ -24,6 +24,7 @@
   class GlobalVarExprAST;
   class AssignmentExprAST;
   class InitAST;
+  class IfExprAST;
   class ForExprAST;
 }
 
@@ -141,16 +142,16 @@ stmt:
 | exp                   { $$ = $1; }
 
 ifstmt:
-  "if" "(" condexp ")" stmt              { $$ = new IfExprAST($3, $5, nullptr); } #CHECK
-| "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
+  "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
+| "if" "(" condexp ")" stmt              { $$ = new IfExprAST($3, $5, nullptr); }
 
 forstmt:
   "for" "(" init ";" condexp ";" assignment ")" stmt  { $$ =  new ForExprAST($3, $5, $7, $9); }
 
 init:
-  binding               { $1.setBinding(true);
+  binding               { $1->setBinding(true);
                           $$ = $1; }
-| assignment            { $1.setBinding(false);
+| assignment            { $1->setBinding(false);
                           $$ = $1; }
 
 assignment:

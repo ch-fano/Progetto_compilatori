@@ -468,7 +468,7 @@ Value* BlockExprAST::codegen(driver& drv) {
 
 /********************** Assignment Expression Tree *********************/
 AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val): 
-         Name(Name), Val(Val) {};
+    InitAST(Name), Val(Val) {};
 
 Value* AssignmentExprAST::codegen(driver& drv) {
    
@@ -477,11 +477,11 @@ Value* AssignmentExprAST::codegen(driver& drv) {
    if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
      return nullptr;
 
-   AllocaInst *AllocaTmp = drv.NamedValues[Name];
+   AllocaInst *AllocaTmp = drv.NamedValues[this->getName()];
    if (!AllocaTmp){
-    GlobalVariable *GlobalTmp = module->getNamedGlobal(Name);
+    GlobalVariable *GlobalTmp = module->getNamedGlobal(this->getName());
     if(!GlobalTmp)
-      return LogErrorV("Variabile "+Name+" non definita");
+      return LogErrorV("Variabile "+this->getName()+" non definita");
 
     builder->CreateStore(BoundVal, GlobalTmp);
    } else
@@ -491,6 +491,8 @@ Value* AssignmentExprAST::codegen(driver& drv) {
 };
 
 /************************* Initialization Tree *************************/
+InitAST::InitAST(const std::string Name): Name(Name){};
+
 bool InitAST::getBinding(){
   return binding;
 }
@@ -504,7 +506,7 @@ const std::string& InitAST::getName() const {
 
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
-   Name(Name), Val(Val) {};
+   InitAST(Name), Val(Val) {};
 
 AllocaInst* VarBindingAST::codegen(driver& drv) {
    // Viene subito recuperato il riferimento alla funzione in cui si trova
@@ -522,7 +524,7 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
       return nullptr;
    }
    // Se tutto ok, si genera l'struzione che alloca memoria per la variabile ...
-   AllocaInst *Alloca = CreateEntryBlockAlloca(fun, Name);
+   AllocaInst *Alloca = CreateEntryBlockAlloca(fun, this->getName());
    // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
    // ovvero il contenuto del registro BoundVal
    if(Val)

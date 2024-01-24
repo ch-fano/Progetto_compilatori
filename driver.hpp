@@ -83,6 +83,7 @@ class InitAST : public virtual RootAST{
     bool binding = false;
     const std::string Name;
   public:
+    InitAST(const std::string Name);
     bool getBinding();
     void setBinding(bool binding);
     const std::string& getName() const;
