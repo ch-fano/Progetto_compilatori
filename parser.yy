@@ -26,7 +26,6 @@
   class InitAST;
   class IfExprAST;
   class ForExprAST;
-  class UnaryExprAST;
 }
 
 // The parsing context.
@@ -58,6 +57,7 @@
   EQ         "=="
   ASSIGN     "="
   INCREASE   "++"
+  DECREASE   "--"
   LBRACE     "{"
   RBRACE     "}"
   EXTERN     "extern"
@@ -158,7 +158,13 @@ init:
 
 assignment:
   "id" "=" exp          { $$ = new AssignmentExprAST($1, $3); }
-| "++" "id"             { ExprAST * expr = new UnaryExprAST("++", $2);
+| "++" "id"             { ExprAST * var= new VariableExprAST($2);
+                          ExprAST * num = new NumberExprAST(1.0);
+                          ExprAST * expr = new BinaryExprAST('+', var, num);
+                          $$ = new AssignmentExprAST($2, expr); }
+| "--" "id"             { ExprAST * var= new VariableExprAST($2);
+                          ExprAST * num = new NumberExprAST(1.0);
+                          ExprAST * expr = new BinaryExprAST('-', var, num);
                           $$ = new AssignmentExprAST($2, expr); }
 
 %left ":";

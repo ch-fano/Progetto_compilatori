@@ -6,38 +6,73 @@
 pow2:                                   # @pow2
 	.cfi_startproc
 # %bb.0:                                # %entry
-	movapd	%xmm0, %xmm2
-	movsd	%xmm0, -8(%rsp)
-	movsd	%xmm1, -16(%rsp)
+	subq	$24, %rsp
+	.cfi_def_cfa_offset 32
+	movsd	%xmm0, 16(%rsp)
+	movsd	%xmm1, 8(%rsp)
 	addsd	%xmm1, %xmm1
-	xorpd	%xmm0, %xmm0
-	ucomisd	%xmm1, %xmm2
+	ucomisd	%xmm1, %xmm0
 	jae	.LBB0_2
 # %bb.1:                                # %trueexp
-	movsd	-16(%rsp), %xmm0                # xmm0 = mem[0],zero
-.LBB0_2:                                # %endcond
+	movsd	8(%rsp), %xmm0                  # xmm0 = mem[0],zero
+	addq	$24, %rsp
+	.cfi_def_cfa_offset 8
+	retq
+.LBB0_2:                                # %falseexp
+	.cfi_def_cfa_offset 32
+	movsd	16(%rsp), %xmm0                 # xmm0 = mem[0],zero
+	movsd	8(%rsp), %xmm1                  # xmm1 = mem[0],zero
+	addsd	%xmm1, %xmm1
+	callq	pow2@PLT
+	addq	$24, %rsp
+	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end0:
 	.size	pow2, .Lfunc_end0-pow2
 	.cfi_endproc
                                         # -- End function
-	.globl	intpart                         # -- Begin function intpart
+	.section	.rodata.cst8,"aM",@progbits,8
+	.p2align	3, 0x0                          # -- Begin function intpart
+.LCPI1_0:
+	.quad	0x3ff0000000000000              # double 1
+	.text
+	.globl	intpart
 	.p2align	4, 0x90
 	.type	intpart,@function
 intpart:                                # @intpart
 	.cfi_startproc
 # %bb.0:                                # %entry
-	movsd	%xmm0, -16(%rsp)
-	movsd	%xmm1, -24(%rsp)
-	movq	$0, -8(%rsp)
-	xorps	%xmm0, %xmm0
-	xorl	%eax, %eax
-	testb	%al, %al
-	je	.LBB1_1
-# %bb.2:                                # %endcond8
+	subq	$24, %rsp
+	.cfi_def_cfa_offset 32
+	movsd	%xmm0, (%rsp)
+	movsd	%xmm1, 8(%rsp)
+	xorpd	%xmm1, %xmm1
+	ucomisd	.LCPI1_0(%rip), %xmm0
+	xorpd	%xmm0, %xmm0
+	jb	.LBB1_2
+# %bb.1:                                # %falseexp
+	movsd	(%rsp), %xmm0                   # xmm0 = mem[0],zero
+	movsd	.LCPI1_0(%rip), %xmm1           # xmm1 = mem[0],zero
+	callq	pow2@PLT
+	xorpd	%xmm1, %xmm1
+.LBB1_2:                                # %endcond
+	movsd	%xmm0, 16(%rsp)
+	ucomisd	%xmm1, %xmm0
+	je	.LBB1_3
+# %bb.4:                                # %falseexp8
+	movsd	(%rsp), %xmm0                   # xmm0 = mem[0],zero
+	movsd	16(%rsp), %xmm1                 # xmm1 = mem[0],zero
+	subsd	%xmm1, %xmm0
+	addsd	8(%rsp), %xmm1
+	callq	intpart@PLT
+	addq	$24, %rsp
+	.cfi_def_cfa_offset 8
 	retq
-.LBB1_1:                                # %trueexp5
-	movsd	-24(%rsp), %xmm0                # xmm0 = mem[0],zero
+.LBB1_3:                                # %trueexp6
+	.cfi_def_cfa_offset 32
+	movsd	8(%rsp), %xmm0                  # xmm0 = mem[0],zero
+	addq	$24, %rsp
+	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end1:
 	.size	intpart, .Lfunc_end1-intpart

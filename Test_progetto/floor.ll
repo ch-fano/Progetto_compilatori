@@ -15,10 +15,14 @@ trueexp:                                          ; preds = %entry
   br label %endcond
 
 falseexp:                                         ; preds = %entry
+  %x6 = load double, ptr %x1, align 8
+  %i7 = load double, ptr %i2, align 8
+  %mulres8 = fmul double 2.000000e+00, %i7
+  %calltmp = call double @pow2(double %x6, double %mulres8)
   br label %endcond
 
 endcond:                                          ; preds = %falseexp, %trueexp
-  %condval = phi double [ %i5, %trueexp ], [ 0.000000e+00, %falseexp ]
+  %condval = phi double [ %i5, %trueexp ], [ %calltmp, %falseexp ]
   ret double %condval
 }
 
@@ -37,25 +41,34 @@ trueexp:                                          ; preds = %entry
   br label %endcond
 
 falseexp:                                         ; preds = %entry
+  %x4 = load double, ptr %x1, align 8
+  %calltmp = call double @pow2(double %x4, double 1.000000e+00)
   br label %endcond
 
 endcond:                                          ; preds = %falseexp, %trueexp
-  %condval = phi double [ 0.000000e+00, %trueexp ], [ 0.000000e+00, %falseexp ]
+  %condval = phi double [ 0.000000e+00, %trueexp ], [ %calltmp, %falseexp ]
   store double %condval, ptr %y, align 8
-  %y4 = load double, ptr %y, align 8
-  %eqtest = fcmp ueq double %y4, 0.000000e+00
-  br i1 %eqtest, label %trueexp5, label %falseexp7
+  %y5 = load double, ptr %y, align 8
+  %eqtest = fcmp ueq double %y5, 0.000000e+00
+  br i1 %eqtest, label %trueexp6, label %falseexp8
 
-trueexp5:                                         ; preds = %endcond
-  %acc6 = load double, ptr %acc2, align 8
-  br label %endcond8
+trueexp6:                                         ; preds = %endcond
+  %acc7 = load double, ptr %acc2, align 8
+  br label %endcond14
 
-falseexp7:                                        ; preds = %endcond
-  br label %endcond8
+falseexp8:                                        ; preds = %endcond
+  %x9 = load double, ptr %x1, align 8
+  %y10 = load double, ptr %y, align 8
+  %subres = fsub double %x9, %y10
+  %acc11 = load double, ptr %acc2, align 8
+  %y12 = load double, ptr %y, align 8
+  %addres = fadd double %acc11, %y12
+  %calltmp13 = call double @intpart(double %subres, double %addres)
+  br label %endcond14
 
-endcond8:                                         ; preds = %falseexp7, %trueexp5
-  %condval9 = phi double [ %acc6, %trueexp5 ], [ 0.000000e+00, %falseexp7 ]
-  ret double %condval9
+endcond14:                                        ; preds = %falseexp8, %trueexp6
+  %condval15 = phi double [ %acc7, %trueexp6 ], [ %calltmp13, %falseexp8 ]
+  ret double %condval15
 }
 
 define double @floor(double %x) {

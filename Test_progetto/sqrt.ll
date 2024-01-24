@@ -16,10 +16,13 @@ trueexp:                                          ; preds = %entry
   br label %endcond
 
 falseexp:                                         ; preds = %entry
+  %a7 = load double, ptr %a1, align 8
+  %b8 = load double, ptr %b2, align 8
+  %subres9 = fsub double %a7, %b8
   br label %endcond
 
 endcond:                                          ; preds = %falseexp, %trueexp
-  %condval = phi double [ %subres, %trueexp ], [ 0.000000e+00, %falseexp ]
+  %condval = phi double [ %subres, %trueexp ], [ %subres9, %falseexp ]
   ret double %condval
 }
 
@@ -80,13 +83,33 @@ entry:
   br i1 %eqtest, label %trueexp, label %falseexp
 
 trueexp:                                          ; preds = %entry
-  br label %endcond
+  br label %endcond11
 
 falseexp:                                         ; preds = %entry
+  %y3 = load double, ptr %y1, align 8
+  %lttest = fcmp ult double %y3, 1.000000e+00
+  br i1 %lttest, label %trueexp4, label %falseexp7
+
+trueexp4:                                         ; preds = %falseexp
+  %y5 = load double, ptr %y1, align 8
+  %y6 = load double, ptr %y1, align 8
+  %subres = fsub double 1.000000e+00, %y6
+  %calltmp = call double @iterate(double %y5, double %subres)
   br label %endcond
 
-endcond:                                          ; preds = %falseexp, %trueexp
-  %condval = phi double [ 1.000000e+00, %trueexp ], [ 0.000000e+00, %falseexp ]
-  ret double %condval
+falseexp7:                                        ; preds = %falseexp
+  %y8 = load double, ptr %y1, align 8
+  %y9 = load double, ptr %y1, align 8
+  %divres = fdiv double %y9, 2.000000e+00
+  %calltmp10 = call double @iterate(double %y8, double %divres)
+  br label %endcond
+
+endcond:                                          ; preds = %falseexp7, %trueexp4
+  %condval = phi double [ %calltmp, %trueexp4 ], [ %calltmp10, %falseexp7 ]
+  br label %endcond11
+
+endcond11:                                        ; preds = %endcond, %trueexp
+  %condval12 = phi double [ 1.000000e+00, %trueexp ], [ %condval, %endcond ]
+  ret double %condval12
 }
 

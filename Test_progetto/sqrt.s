@@ -6,16 +6,17 @@
 err:                                    # @err
 	.cfi_startproc
 # %bb.0:                                # %entry
-	movapd	%xmm0, %xmm2
 	movsd	%xmm0, -16(%rsp)
 	movsd	%xmm1, -8(%rsp)
-	xorpd	%xmm0, %xmm0
-	ucomisd	%xmm1, %xmm2
+	ucomisd	%xmm1, %xmm0
 	jae	.LBB0_2
 # %bb.1:                                # %trueexp
 	movsd	-8(%rsp), %xmm0                 # xmm0 = mem[0],zero
 	subsd	-16(%rsp), %xmm0
-.LBB0_2:                                # %endcond
+	retq
+.LBB0_2:                                # %falseexp
+	movsd	-16(%rsp), %xmm0                # xmm0 = mem[0],zero
+	subsd	-8(%rsp), %xmm0
 	retq
 .Lfunc_end0:
 	.size	err, .Lfunc_end0-err
@@ -81,6 +82,8 @@ iterate:                                # @iterate
 	.p2align	3, 0x0                          # -- Begin function sqrt
 .LCPI2_0:
 	.quad	0x3ff0000000000000              # double 1
+.LCPI2_1:
+	.quad	0x4000000000000000              # double 2
 	.text
 	.globl	sqrt
 	.p2align	4, 0x90
@@ -88,14 +91,31 @@ iterate:                                # @iterate
 sqrt:                                   # @sqrt
 	.cfi_startproc
 # %bb.0:                                # %entry
+	pushq	%rax
+	.cfi_def_cfa_offset 16
 	movapd	%xmm0, %xmm1
-	movsd	%xmm0, -8(%rsp)
+	movsd	%xmm0, (%rsp)
 	movsd	.LCPI2_0(%rip), %xmm0           # xmm0 = mem[0],zero
 	ucomisd	%xmm0, %xmm1
-	je	.LBB2_2
+	je	.LBB2_5
 # %bb.1:                                # %falseexp
-	xorpd	%xmm0, %xmm0
-.LBB2_2:                                # %endcond
+	movsd	(%rsp), %xmm0                   # xmm0 = mem[0],zero
+	ucomisd	.LCPI2_0(%rip), %xmm0
+	jae	.LBB2_3
+# %bb.2:                                # %trueexp4
+	movsd	(%rsp), %xmm0                   # xmm0 = mem[0],zero
+	movsd	.LCPI2_0(%rip), %xmm1           # xmm1 = mem[0],zero
+	subsd	%xmm0, %xmm1
+	jmp	.LBB2_4
+.LBB2_3:                                # %falseexp7
+	movsd	(%rsp), %xmm0                   # xmm0 = mem[0],zero
+	movapd	%xmm0, %xmm1
+	divsd	.LCPI2_1(%rip), %xmm1
+.LBB2_4:                                # %endcond11
+	callq	iterate@PLT
+.LBB2_5:                                # %endcond11
+	popq	%rax
+	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end2:
 	.size	sqrt, .Lfunc_end2-sqrt

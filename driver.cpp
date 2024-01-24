@@ -164,25 +164,6 @@ Value *BinaryExprAST::codegen(driver& drv) {
   }
 }; 
 
-/******************** Unary Expression Tree **********************/
-UnaryExprAST::UnaryExprAST(std::string Op, std::string Name):
-  Op(Op), Name(Name) {};
-
-// La generazione del codice in questo caso è di facile comprensione.
-// Viene ricorsivamente generato il codice per recupare il valore della variabile e
-// costruita l'istruzione utilizzando l'opportuno operatore
-Value *UnaryExprAST::codegen(driver& drv) {
-  VariableExprAST *Var = new VariableExprAST(Name);
-  Value * VarV = Var->codegen(drv);
-  if (!VarV) 
-     return nullptr;
-
-  if(Op == "++")
-    return builder->CreateFAdd(VarV,NumberExprAST(1.0).codegen(drv),"addres");
-  else
-    return LogErrorV(Op+": Operatore unario non supportato");
-};
-
 /********************* Call Expression Tree ***********************/
 /* Call Expression Tree */
 CallExprAST::CallExprAST(std::string Callee, std::vector<ExprAST*> Args):
@@ -277,13 +258,13 @@ Value* IfExprAST::codegen(driver& drv) {
     builder->SetInsertPoint(FalseBB);
     Value *FalseV;
 
-    if(!FalseExp){  //#CHECK -> potrei proprio non creare il basic block per il ramo false
+    if(!FalseExp)
+      FalseV = NumberExprAST(0.0).codegen(drv);
+    else{
       FalseV = FalseExp->codegen(drv);
       if (!FalseV)
         return nullptr;
     }
-    else
-      FalseV = NumberExprAST(0.0).codegen(drv);
 
     builder->CreateBr(MergeBB);
     
