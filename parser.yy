@@ -143,9 +143,11 @@ stmt:
 | forstmt               { $$ = $1; }
 | exp                   { $$ = $1; }
 
+%right "then" "else"; // vince lo shift
+
 ifstmt:
-  "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
-| "if" "(" condexp ")" stmt              { $$ = new IfExprAST($3, $5, nullptr); }
+  "if" "(" condexp ")" stmt              { $$ = new IfExprAST($3, $5, nullptr); }  %prec "then"
+| "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
 
 forstmt:
   "for" "(" init ";" condexp ";" assignment ")" stmt  { $$ =  new ForExprAST($3, $5, $7, $9); }
@@ -177,6 +179,7 @@ exp:
 | exp "-" exp           { $$ = new BinaryExprAST('-',$1,$3); }
 | exp "*" exp           { $$ = new BinaryExprAST('*',$1,$3); }
 | exp "/" exp           { $$ = new BinaryExprAST('/',$1,$3); }
+| "-" exp               { $$ = new BinaryExprAST('-', new NumberExprAST(0.0), $2); }
 | idexp                 { $$ = $1; }
 | "(" exp ")"           { $$ = $2; }
 | "number"              { $$ = new NumberExprAST($1); }

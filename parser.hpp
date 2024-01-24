@@ -816,7 +816,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 29, ///< Number of tokens.
+        YYNTOKENS = 30, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -847,31 +847,32 @@ namespace yy {
         S_FOR = 26,                              // "for"
         S_IDENTIFIER = 27,                       // "id"
         S_NUMBER = 28,                           // "number"
-        S_YYACCEPT = 29,                         // $accept
-        S_startsymb = 30,                        // startsymb
-        S_program = 31,                          // program
-        S_top = 32,                              // top
-        S_definition = 33,                       // definition
-        S_external = 34,                         // external
-        S_proto = 35,                            // proto
-        S_globalvar = 36,                        // globalvar
-        S_idseq = 37,                            // idseq
-        S_stmts = 38,                            // stmts
-        S_stmt = 39,                             // stmt
-        S_ifstmt = 40,                           // ifstmt
-        S_forstmt = 41,                          // forstmt
-        S_init = 42,                             // init
-        S_assignment = 43,                       // assignment
-        S_exp = 44,                              // exp
-        S_block = 45,                            // block
-        S_vardefs = 46,                          // vardefs
-        S_binding = 47,                          // binding
-        S_initexp = 48,                          // initexp
-        S_expif = 49,                            // expif
-        S_condexp = 50,                          // condexp
-        S_idexp = 51,                            // idexp
-        S_optexp = 52,                           // optexp
-        S_explist = 53                           // explist
+        S_29_then_ = 29,                         // "then"
+        S_YYACCEPT = 30,                         // $accept
+        S_startsymb = 31,                        // startsymb
+        S_program = 32,                          // program
+        S_top = 33,                              // top
+        S_definition = 34,                       // definition
+        S_external = 35,                         // external
+        S_proto = 36,                            // proto
+        S_globalvar = 37,                        // globalvar
+        S_idseq = 38,                            // idseq
+        S_stmts = 39,                            // stmts
+        S_stmt = 40,                             // stmt
+        S_ifstmt = 41,                           // ifstmt
+        S_forstmt = 42,                          // forstmt
+        S_init = 43,                             // init
+        S_assignment = 44,                       // assignment
+        S_exp = 45,                              // exp
+        S_block = 46,                            // block
+        S_vardefs = 47,                          // vardefs
+        S_binding = 48,                          // binding
+        S_initexp = 49,                          // initexp
+        S_expif = 50,                            // expif
+        S_condexp = 51,                          // condexp
+        S_idexp = 52,                            // idexp
+        S_optexp = 53,                           // optexp
+        S_explist = 54                           // explist
       };
     };
 
@@ -1423,7 +1424,8 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOK_END
-                   || (token::TOK_YYerror <= tok && tok <= token::TOK_FOR));
+                   || (token::TOK_YYerror <= tok && tok <= token::TOK_FOR)
+                   || tok == 284);
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -2263,7 +2265,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 121,     ///< Last index in yytable_.
+      yylast_ = 125,     ///< Last index in yytable_.
       yynnts_ = 25,  ///< Number of nonterminal symbols.
       yyfinal_ = 14 ///< Termination state number.
     };
@@ -2312,10 +2314,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28
+      25,    26,    27,    28,    29
     };
     // Last valid token kind.
-    const int code_max = 283;
+    const int code_max = 284;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2577,7 +2579,7 @@ switch (yykind)
 
 
 } // yy
-#line 2581 "parser.hpp"
+#line 2583 "parser.hpp"
 
 
 

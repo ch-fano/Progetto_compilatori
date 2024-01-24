@@ -1,16 +1,17 @@
-extern floor(x);
-global seed;
 global a;
-global m;
-def randk() {
-   var tmp;
-   tmp = 9;
-   seed = tmp-m*floor(tmp/m);
-   seed/m
-};
-def randinit(x) {
-   a = 16897.0;
-   m = 2147483647.0;
-   seed = x-m*floor(x/m);
-   0.0
+global n;
+def fun() {
+   var a = 0;
+   var b = 0;
+   
+   if (a == 0)
+      n = 10
+   else
+      n = 5
+   ;
+   for (var i = 0; i < n; ++i) {
+      for (var j = n; 0 < n; --j)
+         ++b
+   };
+   b 
 };
