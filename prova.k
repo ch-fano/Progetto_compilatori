@@ -5,13 +5,14 @@ def fun() {
    var b = 0;
    
    if (a == 0)
-      n = 10
+      n = 2
    else
       n = 5
    ;
    for (var i = 0; i < n; ++i) {
-      for (var j = n; 0 < n; --j)
-         ++b
+      for (var j = n; 0 < j; --j)
+         for(var k = n; 0 < n; --k)
+            ++b
    };
    b 
 };

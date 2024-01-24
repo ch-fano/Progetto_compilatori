@@ -350,15 +350,6 @@ Value* ForExprAST::codegen(driver& drv) {
        return nullptr;
     builder->CreateBr(CondBB);
     
-    // Come già ricordato, la chiamata di codegen in Body potrebbe aver inserito 
-    // altri blocchi (nel caso in cui la parte forbody sia a sua volta un condizionale).
-    // Ne consegue che il blocco corrente potrebbe non coincidere più con TrueBB.
-    // Il branch alla parte CondBB deve però essere effettuato dal blocco corrente,
-    // che dunque va recuperato. Ed è fondamentale sapere da quale blocco origina
-    // il salto perché tale informazione verrà utilizzata da un'istruzione PHI.
-    // Nel caso in cui non sia stato inserito alcun nuovo blocco, la seguente
-    // istruzione corrisponde ad una NO-OP
-    BodyBB = builder->GetInsertBlock();
     function->insert(function->end(), CondBB);
     
     // "Posizioniamo" il builder all'inizio del blocco condizione, 
