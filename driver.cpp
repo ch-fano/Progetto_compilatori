@@ -293,6 +293,121 @@ Value* IfExprAST::codegen(driver& drv) {
     return PN;
 };
 
+/************************* For Expression Tree *************************/
+ForExprAST::ForExprAST(InitAST* Init, ExprAST* Cond, AssignmentExprAST* Assignment, ExprAST* Body):
+   Init(Init), Cond(Cond), Assignment(Assignment), Body(Body) {};
+   
+Value* ForExprAST::codegen(driver& drv) {
+
+  if(Init->getBinding()){
+    
+    AllocaInst* AllocaTmp;
+   
+    AllocaInst *boundval = static_cast<AllocaInst *>(Init->codegen(drv));
+    if (!boundval) 
+        return nullptr;
+    
+    // Viene temporaneamente rimossa la precedente istruzione di allocazione
+    // della stessa variabile (nome) e inserita quella corrente
+    AllocaTmp= drv.NamedValues[Init->getName()];
+    drv.NamedValues[Init->getName()] = boundval;
+  
+    // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
+    drv.NamedValues[Init->getName()] = AllocaTmp;
+   }
+   else{
+    Value* Val = Init->codegen(drv);
+
+    if (!Val)
+       return nullptr;
+   }
+
+
+    Value* CondV = Cond->codegen(drv);
+    if (!CondV)
+       return nullptr;
+    
+    // Ora bisogna generare l'istruzione di salto condizionato, ma prima
+    // vanno creati i corrispondenti basic block nella funzione attuale
+    // (ovvero la funzione di cui fa parte il corrente blocco di inserimento)
+    Function *function = builder->GetInsertBlock()->getParent();
+    BasicBlock *StartBB = builder->GetInsertBlock();
+    BasicBlock *BodyBB =  BasicBlock::Create(*context, "forbody", function);
+    // Il blocco BodyBB viene inserito nella funzione dopo il blocco corrente
+    BasicBlock *CondBB = BasicBlock::Create(*context, "forcond");
+    BasicBlock *EndBB = BasicBlock::Create(*context, "endcond");
+    // Gli altri due blocchi non vengono ancora inseriti perché le istruzioni
+    // previste nel "ramo" body del condizionale potrebbe dare luogo alla creazione
+    // di altri blocchi, che naturalmente andrebbero inseriti prima di CondBB
+    
+    // Ora possiamo creare l'istruzione di salto condizionato
+    builder->CreateCondBr(CondV, BodyBB, EndBB);
+    
+    // "Posizioniamo" il builder all'inizio del blocco body, 
+    // generiamo ricorsivamente il codice da eseguire in caso di
+    // condizione vera e, in chiusura di blocco, generiamo il salto 
+    // incondizionato al blocco condizione
+    builder->SetInsertPoint(BodyBB);
+    Value *BodyV = Body->codegen(drv);
+    if (!BodyV)
+       return nullptr;
+    builder->CreateBr(CondBB);
+    
+    // Come già ricordato, la chiamata di codegen in Body potrebbe aver inserito 
+    // altri blocchi (nel caso in cui la parte forbody sia a sua volta un condizionale).
+    // Ne consegue che il blocco corrente potrebbe non coincidere più con TrueBB.
+    // Il branch alla parte CondBB deve però essere effettuato dal blocco corrente,
+    // che dunque va recuperato. Ed è fondamentale sapere da quale blocco origina
+    // il salto perché tale informazione verrà utilizzata da un'istruzione PHI.
+    // Nel caso in cui non sia stato inserito alcun nuovo blocco, la seguente
+    // istruzione corrisponde ad una NO-OP
+    BodyBB = builder->GetInsertBlock();
+    function->insert(function->end(), CondBB);
+    
+    // "Posizioniamo" il builder all'inizio del blocco condizione, 
+    // generiamo ricorsivamente il codice dell'assegnamento e dell'espressione da verificare,
+    // in caso di condizione falsa e, in chiusura di blocco, generiamo il salto 
+    // incondizionato al blocco end
+    builder->SetInsertPoint(CondBB);
+
+    Value* AssignV = Assignment->codegen(drv);
+    if(!AssignV)
+      return nullptr;
+
+    CondV = Cond->codegen(drv);
+    if (!CondV)
+       return nullptr;
+
+    builder->CreateCondBr(CondV, BodyBB, EndBB);
+    
+    // Esattamente per la ragione spiegata sopra (ovvero il possibile inserimento
+    // di nuovi blocchi da parte della chiamata di codegen in Cond), andiamo ora
+    // a recuperare il blocco corrente 
+    CondBB = builder->GetInsertBlock();
+    function->insert(function->end(), EndBB);
+    
+    // Andiamo dunque a generare il codice per la parte dove i due "flussi"
+    // di esecuzione si riuniscono. Impostiamo correttamente il builder
+    builder->SetInsertPoint(EndBB);
+  
+    // Il codice di riunione dei flussi è una "semplice" istruzione PHI: 
+    //a seconda del blocco da cui arriva il flusso, TrueBB o FalseBB, il valore
+    // del costrutto condizionale (si ricordi che si tratta di un "expression if")
+    // deve essere copiato (in un nuovo registro SSA) da TrueV o da FalseV
+    // La creazione di un'istruzione PHI avviene però in due passi, in quanto
+    // il numero di "flussi entranti" non è fissato.
+    // 1) Dapprima si crea il nodo PHI specificando quanti sono i possibili nodi sorgente
+    // 2) Per ogni possibile nodo sorgente, viene poi inserita l'etichetta e il registro
+    //    SSA da cui prelevare il valore 
+    PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
+    PN->addIncoming(BodyV, CondBB);
+    PN->addIncoming(NumberExprAST(1.0).codegen(drv), StartBB);
+    return PN;
+};
+
+
+
+
 /********************** Block Expression Tree *********************/
 BlockExprAST::BlockExprAST(std::vector<VarBindingAST*> Def, std::vector<ExprAST*> Stmt): 
          Def(std::move(Def)), Stmt(std::move(Stmt)) {};
@@ -355,10 +470,6 @@ Value* BlockExprAST::codegen(driver& drv) {
 AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val): 
          Name(Name), Val(Val) {};
 
-const std::string& AssignmentExprAST::getName() const { 
-   return Name; 
-};
-
 Value* AssignmentExprAST::codegen(driver& drv) {
    
    Value *BoundVal;
@@ -387,13 +498,13 @@ void InitAST::setBinding(bool binding){
   this->binding = binding;
 }
 
+const std::string& InitAST::getName() const { 
+   return Name; 
+};
+
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
    Name(Name), Val(Val) {};
-   
-const std::string& VarBindingAST::getName() const { 
-   return Name; 
-};
 
 AllocaInst* VarBindingAST::codegen(driver& drv) {
    // Viene subito recuperato il riferimento alla funzione in cui si trova

@@ -24,6 +24,7 @@
   class GlobalVarExprAST;
   class AssignmentExprAST;
   class InitAST;
+  class ForExprAST;
 }
 
 // The parsing context.
@@ -84,11 +85,11 @@
 %type <VarBindingAST*> binding
 %type <GlobalVarExprAST*> globalvar
 %type <std::vector<ExprAST*>> stmts
-%type <RootAST*> stmt 
+%type <ExprAST*> stmt 
 %type <AssignmentExprAST*> assignment
 %type <ExprAST*> initexp
-%type <IfExprAST> ifstmt
-%type forstmt #TODO
+%type <IfExprAST*> ifstmt
+%type <ForExprAST*> forstmt 
 %type <InitAST*> init
 
 
@@ -144,7 +145,7 @@ ifstmt:
 | "if" "(" condexp ")" stmt "else" stmt  { $$ = new IfExprAST($3, $5, $7); }
 
 forstmt:
-  "for" "(" init ";" condexp ";" assignment ")" stmt  { #TODO }
+  "for" "(" init ";" condexp ";" assignment ")" stmt  { $$ =  new ForExprAST($3, $5, $7, $9); }
 
 init:
   binding               { $1.setBinding(true);

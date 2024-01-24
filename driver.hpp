@@ -75,15 +75,17 @@ public:
 };
 
 /// ExprAST - Classe base per tutti i nodi espressione
-class ExprAST : public RootAST {};
+class ExprAST : public RootAST {};  //#CHECK virtual
 
 /// InitAST - Classe base per tutti i nodi inizializzazione
 class InitAST : public virtual RootAST{
   private:
     bool binding = false;
+    const std::string Name;
   public:
     bool getBinding();
     void setBinding(bool binding);
+    const std::string& getName() const;
 };
 
 /// NumberExprAST - Classe per la rappresentazione di costanti numeriche
@@ -153,6 +155,18 @@ public:
   Value *codegen(driver& drv) override;
 };
 
+/// ForExprAST
+class ForExprAST : public ExprAST {
+private:
+  InitAST* Init;
+  ExprAST* Cond;
+  AssignmentExprAST* Assignment;
+  ExprAST* Body;
+public:
+  ForExprAST(InitAST* Init, ExprAST* Cond, AssignmentExprAST* Assignment, ExprAST* Body);
+  Value *codegen(driver& drv) override;
+};
+
 /// BlockExprAST
 class BlockExprAST : public ExprAST {
 private:
@@ -163,27 +177,23 @@ public:
   Value *codegen(driver& drv) override;
 }; 
 
-/// AssignmentAST
+/// AssignmentExprAST
 class AssignmentExprAST : public ExprAST, public InitAST {
 private:
-  const std::string Name;
   ExprAST* Val;
 public:
   AssignmentExprAST(const std::string Name, ExprAST* Val);
-  Value *codegen(driver& drv) override;
-  const std::string& getName() const;
+  Value * codegen(driver& drv) override;
 };
 
 
 /// VarBindingAST
 class VarBindingAST: public InitAST {
 private:
-  const std::string Name;
   ExprAST* Val;
 public:
   VarBindingAST(const std::string Name, ExprAST* Val);
   AllocaInst *codegen(driver& drv) override;
-  const std::string& getName() const;
 };
 
 /// PrototypeAST - Classe per la rappresentazione dei prototipi di funzione
