@@ -60,6 +60,8 @@
   DECREASE   "--"
   LBRACE     "{"
   RBRACE     "}"
+  LSQUARE    "["
+  RSQUARE    "]"
   EXTERN     "extern"
   DEF        "def"
   VAR        "var"
@@ -163,15 +165,16 @@ init:
                           $$ = $1; }
 
 assignment:
-  "id" "=" exp          { $$ = new AssignmentExprAST($1, $3); }
-| "++" "id"             { ExprAST * var= new VariableExprAST($2);
-                          ExprAST * num = new NumberExprAST(1.0);
-                          ExprAST * expr = new BinaryExprAST('+', var, num);
-                          $$ = new AssignmentExprAST($2, expr); }
-| "--" "id"             { ExprAST * var= new VariableExprAST($2);
-                          ExprAST * num = new NumberExprAST(1.0);
-                          ExprAST * expr = new BinaryExprAST('-', var, num);
-                          $$ = new AssignmentExprAST($2, expr); }
+  "id" "=" exp                { $$ = new AssignmentExprAST($1, $3); }
+| "id" "[" exp "]" "=" exp    { #TODO }
+| "++" "id"                   { ExprAST * var= new VariableExprAST($2);
+                                ExprAST * num = new NumberExprAST(1.0);
+                                ExprAST * expr = new BinaryExprAST('+', var, num);
+                                $$ = new AssignmentExprAST($2, expr); }
+| "--" "id"                   { ExprAST * var= new VariableExprAST($2);
+                                ExprAST * num = new NumberExprAST(1.0);
+                                ExprAST * expr = new BinaryExprAST('-', var, num);
+                                $$ = new AssignmentExprAST($2, expr); }
 
 
 %left ":" "?";
@@ -207,7 +210,9 @@ vardefs:
                             $$ = $1; }
                             
 binding:
-  "var" "id" initexp      { $$ = new VarBindingAST($2,$3); } 
+  "var" "id" initexp                                  { $$ = new VarBindingAST($2,$3); }
+| "var" "id" "[" "number" "]"                         { #TODO }
+| "var" "id" "[" "number" "]" "=" "{" explist "}"     { #TODO}
 
 initexp:
   %empty                  { $$ = nullptr; }
@@ -230,6 +235,7 @@ relexp:
 idexp:
   "id"                  { $$ = new VariableExprAST($1); }
 | "id" "(" optexp ")"   { $$ = new CallExprAST($1,$3); };
+| "id" "[" exp "]"      { #TODO }
 
 optexp:
   %empty                { std::vector<ExprAST*> args;
