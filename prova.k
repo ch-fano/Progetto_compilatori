@@ -5,7 +5,7 @@ def fun() {
    var b = 0;
    
    if (a == 0)
-      n = 2
+      n = 10
    else
       n = 5
    ;

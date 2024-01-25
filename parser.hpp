@@ -677,6 +677,7 @@ namespace yy {
       // initexp
       // expif
       // condexp
+      // relexp
       // idexp
       char dummy3[sizeof (ExprAST*)];
 
@@ -798,8 +799,11 @@ namespace yy {
     TOK_IF = 279,                  // "if"
     TOK_ELSE = 280,                // "else"
     TOK_FOR = 281,                 // "for"
-    TOK_IDENTIFIER = 282,          // "id"
-    TOK_NUMBER = 283               // "number"
+    TOK_AND = 282,                 // "and"
+    TOK_OR = 283,                  // "or"
+    TOK_NOT = 284,                 // "not"
+    TOK_IDENTIFIER = 285,          // "id"
+    TOK_NUMBER = 286               // "number"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -816,7 +820,7 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 30, ///< Number of tokens.
+        YYNTOKENS = 33, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -845,34 +849,38 @@ namespace yy {
         S_IF = 24,                               // "if"
         S_ELSE = 25,                             // "else"
         S_FOR = 26,                              // "for"
-        S_IDENTIFIER = 27,                       // "id"
-        S_NUMBER = 28,                           // "number"
-        S_29_then_ = 29,                         // "then"
-        S_YYACCEPT = 30,                         // $accept
-        S_startsymb = 31,                        // startsymb
-        S_program = 32,                          // program
-        S_top = 33,                              // top
-        S_definition = 34,                       // definition
-        S_external = 35,                         // external
-        S_proto = 36,                            // proto
-        S_globalvar = 37,                        // globalvar
-        S_idseq = 38,                            // idseq
-        S_stmts = 39,                            // stmts
-        S_stmt = 40,                             // stmt
-        S_ifstmt = 41,                           // ifstmt
-        S_forstmt = 42,                          // forstmt
-        S_init = 43,                             // init
-        S_assignment = 44,                       // assignment
-        S_exp = 45,                              // exp
-        S_block = 46,                            // block
-        S_vardefs = 47,                          // vardefs
-        S_binding = 48,                          // binding
-        S_initexp = 49,                          // initexp
-        S_expif = 50,                            // expif
-        S_condexp = 51,                          // condexp
-        S_idexp = 52,                            // idexp
-        S_optexp = 53,                           // optexp
-        S_explist = 54                           // explist
+        S_AND = 27,                              // "and"
+        S_OR = 28,                               // "or"
+        S_NOT = 29,                              // "not"
+        S_IDENTIFIER = 30,                       // "id"
+        S_NUMBER = 31,                           // "number"
+        S_32_then_ = 32,                         // "then"
+        S_YYACCEPT = 33,                         // $accept
+        S_startsymb = 34,                        // startsymb
+        S_program = 35,                          // program
+        S_top = 36,                              // top
+        S_definition = 37,                       // definition
+        S_external = 38,                         // external
+        S_proto = 39,                            // proto
+        S_globalvar = 40,                        // globalvar
+        S_idseq = 41,                            // idseq
+        S_stmts = 42,                            // stmts
+        S_stmt = 43,                             // stmt
+        S_ifstmt = 44,                           // ifstmt
+        S_forstmt = 45,                          // forstmt
+        S_init = 46,                             // init
+        S_assignment = 47,                       // assignment
+        S_exp = 48,                              // exp
+        S_block = 49,                            // block
+        S_vardefs = 50,                          // vardefs
+        S_binding = 51,                          // binding
+        S_initexp = 52,                          // initexp
+        S_expif = 53,                            // expif
+        S_condexp = 54,                          // condexp
+        S_relexp = 55,                           // relexp
+        S_idexp = 56,                            // idexp
+        S_optexp = 57,                           // optexp
+        S_explist = 58                           // explist
       };
     };
 
@@ -922,6 +930,7 @@ namespace yy {
       case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
+      case symbol_kind::S_relexp: // relexp
       case symbol_kind::S_idexp: // idexp
         value.move< ExprAST* > (std::move (that.value));
         break;
@@ -1266,6 +1275,7 @@ switch (yykind)
       case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
+      case symbol_kind::S_relexp: // relexp
       case symbol_kind::S_idexp: // idexp
         value.template destroy< ExprAST* > ();
         break;
@@ -1424,8 +1434,8 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOK_END
-                   || (token::TOK_YYerror <= tok && tok <= token::TOK_FOR)
-                   || tok == 284);
+                   || (token::TOK_YYerror <= tok && tok <= token::TOK_NOT)
+                   || tok == 287);
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1908,6 +1918,51 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_AND (location_type l)
+      {
+        return symbol_type (token::TOK_AND, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AND (const location_type& l)
+      {
+        return symbol_type (token::TOK_AND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_OR (location_type l)
+      {
+        return symbol_type (token::TOK_OR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_OR (const location_type& l)
+      {
+        return symbol_type (token::TOK_OR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NOT (location_type l)
+      {
+        return symbol_type (token::TOK_NOT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NOT (const location_type& l)
+      {
+        return symbol_type (token::TOK_NOT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_IDENTIFIER (std::string v, location_type l)
       {
         return symbol_type (token::TOK_IDENTIFIER, std::move (v), std::move (l));
@@ -2013,7 +2068,7 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const signed char yydefgoto_[];
@@ -2265,8 +2320,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 125,     ///< Last index in yytable_.
-      yynnts_ = 25,  ///< Number of nonterminal symbols.
+      yylast_ = 140,     ///< Last index in yytable_.
+      yynnts_ = 26,  ///< Number of nonterminal symbols.
       yyfinal_ = 14 ///< Termination state number.
     };
 
@@ -2314,10 +2369,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29
+      25,    26,    27,    28,    29,    30,    31,    32
     };
     // Last valid token kind.
-    const int code_max = 284;
+    const int code_max = 287;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2349,6 +2404,7 @@ switch (yykind)
       case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
+      case symbol_kind::S_relexp: // relexp
       case symbol_kind::S_idexp: // idexp
         value.copy< ExprAST* > (YY_MOVE (that.value));
         break;
@@ -2453,6 +2509,7 @@ switch (yykind)
       case symbol_kind::S_initexp: // initexp
       case symbol_kind::S_expif: // expif
       case symbol_kind::S_condexp: // condexp
+      case symbol_kind::S_relexp: // relexp
       case symbol_kind::S_idexp: // idexp
         value.move< ExprAST* > (YY_MOVE (s.value));
         break;
@@ -2579,7 +2636,7 @@ switch (yykind)
 
 
 } // yy
-#line 2583 "parser.hpp"
+#line 2640 "parser.hpp"
 
 
 

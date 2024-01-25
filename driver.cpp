@@ -142,8 +142,10 @@ BinaryExprAST::BinaryExprAST(char Op, ExprAST* LHS, ExprAST* RHS):
 // costruisce l'istruzione utilizzando l'opportuno operatore
 Value *BinaryExprAST::codegen(driver& drv) {
   Value *L = LHS->codegen(drv);
-  Value *R = RHS->codegen(drv);
-  if (!L || !R) 
+  Value *R;
+  if (RHS)
+    R = RHS->codegen(drv);
+  if (!L || (!R && RHS)) 
      return nullptr;
   switch (Op) {
   case '+':
@@ -158,6 +160,12 @@ Value *BinaryExprAST::codegen(driver& drv) {
     return builder->CreateFCmpULT(L,R,"lttest");
   case '=':
     return builder->CreateFCmpUEQ(L,R,"eqtest");
+  case 'A':
+    return builder->CreateAnd(L,R,"andtest");
+  case 'O':
+    return builder->CreateOr(L,R,"ortest");
+  case 'N':
+    return builder->CreateNot(L,"nottest");
   default:  
     std::cout << Op << std::endl;
     return LogErrorV("Operatore binario non supportato");

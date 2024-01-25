@@ -67,6 +67,9 @@
   IF         "if"
   ELSE       "else"
   FOR        "for"
+  AND        "and"
+  OR         "or"
+  NOT        "not"  
 ;
 
 %token <std::string> IDENTIFIER "id"
@@ -74,7 +77,8 @@
 %type <ExprAST*> exp
 %type <ExprAST*> idexp
 %type <ExprAST*> expif
-%type <ExprAST*> condexp
+%type <ExprAST*> condexp    
+%type <ExprAST*> relexp 
 %type <std::vector<ExprAST*>> optexp
 %type <std::vector<ExprAST*>> explist
 %type <RootAST*> program
@@ -141,7 +145,7 @@ stmt:
 | block                 { $$ = $1; }
 | ifstmt                { $$ = $1; }
 | forstmt               { $$ = $1; }
-| exp                   { $$ = $1; }
+| exp                   { $$ = $1; };
 
 %right "then" "else"; // vince lo shift
 
@@ -169,10 +173,15 @@ assignment:
                           ExprAST * expr = new BinaryExprAST('-', var, num);
                           $$ = new AssignmentExprAST($2, expr); }
 
-%left ":";
+
+%left ":" "?";
+%left "or";
+%left "and";
 %left "<" "==";
 %left "+" "-";
 %left "*" "/";
+%right "not";
+
 
 exp:
   exp "+" exp           { $$ = new BinaryExprAST('+',$1,$3); }
@@ -208,6 +217,13 @@ expif:
   condexp "?" exp ":" exp { $$ = new IfExprAST($1,$3,$5); }
 
 condexp:
+  relexp                  { $$ = $1; }
+| relexp "and" condexp    { $$ = new BinaryExprAST('A', $1, $3); }
+| relexp "or" condexp     { $$ = new BinaryExprAST('O', $1, $3); }
+| "not" condexp           { $$ = new BinaryExprAST('N', $2, nullptr); }
+| "(" condexp ")"         { $$ = $2; }
+
+relexp:
   exp "<" exp           { $$ = new BinaryExprAST('<',$1,$3); }
 | exp "==" exp          { $$ = new BinaryExprAST('=',$1,$3); }
 
