@@ -107,7 +107,7 @@ private:
   ExprAST *Index;
   
 public:
-  VariableExprAST(const std::string &Name, ExprAST* Index);
+  VariableExprAST(const std::string &Name, ExprAST* Index=nullptr);
   lexval getLexVal() const override;
   Value *codegen(driver& drv) override;
 };
@@ -116,8 +116,9 @@ public:
 class GlobalVarExprAST: public ExprAST {
 private:
   const std::string Name;
+  double* Size;
 public:
-  GlobalVarExprAST(const std::string Name);
+  GlobalVarExprAST(const std::string Name, double* Size = nullptr);
   GlobalVariable *codegen(driver& drv) override;
   const std::string& getName() const;
 };
@@ -185,7 +186,7 @@ private:
   ExprAST* Val;
   ExprAST* Index;
 public:
-  AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index);
+  AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index = nullptr);
   Value * codegen(driver& drv) override;
 };
 
@@ -194,11 +195,11 @@ public:
 class VarBindingAST: public InitAST {
 private:
   ExprAST* Val;
-  double* Index;
+  double* Size;
   std::vector<ExprAST*> Elems;
 public:
   VarBindingAST(const std::string Name, ExprAST* Val);
-  VarBindingAST(const std::string Name, double* Index, std::vector<ExprAST*> Elems);
+  VarBindingAST(const std::string Name, double* Size, std::vector<ExprAST*> Elems);
   AllocaInst *codegen(driver& drv) override;
 };
 

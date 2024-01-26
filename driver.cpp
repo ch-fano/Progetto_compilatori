@@ -12,9 +12,9 @@ Value *LogErrorV(const std::string Str) {
   return nullptr;
 }
 
-llvm::ConstantInt* ValueToInt(Value * Val){
-  llvm::ConstantFP* ValD = dyn_cast<llvm::ConstantFP>(Val);
-  return dyn_cast<llvm::ConstantInt>(ValD);
+Value * ValueToInt(Value * Val){
+  Value *ValF = builder->CreateFPTrunc(Val, Type::getFloatTy(*context));
+  return builder->CreateFPToSI(ValF, Type::getInt32Ty(*context));
 }
 
 /* Il codice seguente sulle prime non è semplice da comprendere.
@@ -90,7 +90,7 @@ Value *NumberExprAST::codegen(driver& drv) {
 };
 
 /******************** Variable Expression Tree ********************/
-VariableExprAST::VariableExprAST(const std::string &Name, ExprAST *Index=nullptr): Name(Name), Index(Index){};
+VariableExprAST::VariableExprAST(const std::string &Name, ExprAST *Index): Name(Name), Index(Index){};
 
 lexval VariableExprAST::getLexVal() const {
   lexval lval = Name;
@@ -108,39 +108,38 @@ lexval VariableExprAST::getLexVal() const {
 // l'istruzione ma è anche il registro, vista la corrispodenza 1-1 fra le due nozioni), (3)
 // il nome del registro in cui verrà trasferito il valore dalla memoria
 Value *VariableExprAST::codegen(driver& drv) {
-  AllocaInst *A = drv.NamedValues[Name];
+  AllocaInst* LocalTmp = drv.NamedValues[Name];
+  GlobalVariable* GlobalTmp = module->getNamedGlobal(Name);
+
+  if(!GlobalTmp && !LocalTmp)
+    return LogErrorV("Variabile "+Name+" non definita");
   
   if(!Index){
-    if (!A){
-      GlobalVariable *B = module->getNamedGlobal(Name);
 
-      if(!B)
-        return LogErrorV("Variabile "+Name+" non definita");
-      return builder->CreateLoad(B->getValueType(), B, Name.c_str());
-    }
-
-    return builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
+    if(!LocalTmp)    
+      return builder->CreateLoad(GlobalTmp->getValueType(), GlobalTmp, Name.c_str());
+    else
+      return builder->CreateLoad(LocalTmp->getAllocatedType(), LocalTmp, Name.c_str());
+  
   }
   else{
-    if(!A)
-      return LogErrorV("Variabile "+Name+" non definita");
-    
     Value * IdxVal = Index->codegen(drv);
-    llvm::ConstantInt* IdxInt = ValueToInt(IdxVal);
-
-    llvm::ConstantInt* Size= ValueToInt(A->getArraySize());
+    if(!IdxVal)
+      return nullptr;
+    Value* IdxInt = ValueToInt(IdxVal);
 
     //#CHECK -> forse necessario controllo sull'indice
-
-    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *dyn_cast<u_int64_t>(Size));
-    return builder->CreateInBoundsGEP(AT, A, IdxInt);
+    if(!LocalTmp)
+      return builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);
+    else
+      return builder->CreateInBoundsGEP(LocalTmp->getType(), GlobalTmp, IdxInt);
   }
 
 }
 
 /************************* Global Variable Ecpression Tree *************************/
-GlobalVarExprAST::GlobalVarExprAST(const std::string Name):
-  Name(Name) {};
+GlobalVarExprAST::GlobalVarExprAST(const std::string Name, double* Size):
+  Name(Name), Size(Size){};
    
 const std::string& GlobalVarExprAST::getName() const { 
    return Name; 
@@ -149,7 +148,19 @@ const std::string& GlobalVarExprAST::getName() const {
 GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
 
   GlobalValue::LinkageTypes linkage = GlobalValue::CommonLinkage;
-  GlobalVariable *globalvar = new GlobalVariable(*module, PointerType::getDoubleTy(*context), false, linkage, ConstantFP::getNullValue(Type::getDoubleTy(*context)), Name);
+  GlobalVariable *globalvar;
+
+  if(!Size)
+  
+    globalvar = new GlobalVariable(*module, PointerType::getDoubleTy(*context), false, linkage, ConstantFP::getNullValue(Type::getDoubleTy(*context)), Name);
+  
+  else{
+
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
+    globalvar = new GlobalVariable(*module, AT, false, linkage, ConstantFP::getNullValue(AT), Name);
+
+  }
+
 
   globalvar->print(errs());
   fprintf(stderr, "\n");
@@ -492,7 +503,7 @@ Value* BlockExprAST::codegen(driver& drv) {
 };
 
 /********************** Assignment Expression Tree *********************/
-AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index=nullptr): 
+AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index): 
     InitAST(Name), Val(Val), Index(Index) {};
 
 Value* AssignmentExprAST::codegen(driver& drv) {
@@ -502,35 +513,39 @@ Value* AssignmentExprAST::codegen(driver& drv) {
    if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
      return nullptr;
 
-   AllocaInst *AllocaTmp = drv.NamedValues[this->getName()];
+  AllocaInst *AllocaTmp = drv.NamedValues[this->getName()];
+  GlobalVariable *GlobalTmp = module->getNamedGlobal(this->getName());
+  
+  if(!GlobalTmp && !AllocaTmp)
+        return LogErrorV("Variabile "+this->getName()+" non definita");
    
    if(!Index){
-    if (!AllocaTmp){
-      GlobalVariable *GlobalTmp = module->getNamedGlobal(this->getName());
-
-      if(!GlobalTmp)
-        return LogErrorV("Variabile "+this->getName()+" non definita");
-
+    
+    if (!AllocaTmp)
       builder->CreateStore(BoundVal, GlobalTmp);
-    } else
-        builder->CreateStore(BoundVal, AllocaTmp);
+    else
+      builder->CreateStore(BoundVal, AllocaTmp);
+
    }
    else
    {
-    if (!AllocaTmp)
-      return LogErrorV("Variabile "+this->getName()+" non definita");
 
     Value *IdxVal = Index->codegen(drv);
-    llvm::ConstantInt* IdxInt = ValueToInt(IdxVal);
-
-    llvm::ConstantInt* Size= ValueToInt(AllocaTmp->getArraySize());
+    if(!IdxVal)
+      return nullptr;
+    Value* IdxInt = ValueToInt(IdxVal);
 
     //#CHECK -> forse necessario controllo sull'indice
 
-    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *dyn_cast<u_int64_t>(Size));
-    Value *Elem = builder->CreateInBoundsGEP(AT, AllocaTmp, IdxInt);
-    
+    Value *Elem;
+
+    if(!GlobalTmp)
+      Elem = builder->CreateInBoundsGEP(AllocaTmp->getType(), AllocaTmp, IdxInt);
+    else
+      Elem = builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);  
+
     builder->CreateStore(BoundVal, Elem);
+
    }  
    return BoundVal; 
 };
@@ -551,10 +566,10 @@ const std::string& InitAST::getName() const {
 
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
-   InitAST(Name), Val(Val), Index(nullptr) {};
+   InitAST(Name), Val(Val), Size(nullptr) {};
 
-VarBindingAST::VarBindingAST(const std::string Name, double* Index, std::vector<ExprAST*> Elems):
-   InitAST(Name), Val(nullptr), Index(Index), Elems(std::move(Elems)){};
+VarBindingAST::VarBindingAST(const std::string Name, double* Size, std::vector<ExprAST*> Elems):
+   InitAST(Name), Val(nullptr), Size(Size), Elems(std::move(Elems)){};
 
 
 AllocaInst* VarBindingAST::codegen(driver& drv) {
@@ -569,34 +584,43 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
 
    Value *BoundVal;
    if(Val){
+
     BoundVal = Val->codegen(drv);
     if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
       return nullptr;
+
    }
 
    // Se tutto ok, si genera l'struzione che alloca memoria per la variabile ...
   AllocaInst *Alloca;
-  if(!Index)
+  if(!Size){
+
     Alloca = CreateEntryBlockAlloca(fun, this->getName());
+    // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
+    // ovvero il contenuto del registro BoundVal
+    if(Val)
+      builder->CreateStore(BoundVal, Alloca);
+
+  }
   else{
-    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context),static_cast<int>(*Index));
+
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
     Alloca = CreateEntryBlockAlloca(fun, this->getName(), AT);
 
     for(int i=0; i<Elems.size(); i++){
       Value* ExpVal = Elems[i]->codegen(drv);
+      if(!ExpVal)
+        return nullptr;
       Value* ArrayElem = builder->CreateInBoundsGEP(AT, Alloca, ConstantInt::get(*context, APInt(32, i, true)));
 
       builder->CreateStore(ExpVal, ArrayElem);
     }
+    
   }
-   // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
-   // ovvero il contenuto del registro BoundVal
-   if(Val)
-    builder->CreateStore(BoundVal, Alloca);
    
-   // L'istruzione di allocazione (che include il registro "puntatore" all'area di memoria
-   // allocata) viene restituita per essere inserita nella symbol table
-   return Alloca;
+  // L'istruzione di allocazione (che include il registro "puntatore" all'area di memoria
+  // allocata) viene restituita per essere inserita nella symbol table
+  return Alloca;
 };
 
 
