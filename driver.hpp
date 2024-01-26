@@ -75,7 +75,7 @@ public:
 };
 
 /// ExprAST - Classe base per tutti i nodi espressione
-class ExprAST : public RootAST {};  //#CHECK virtual
+class ExprAST : public RootAST {};
 
 /// InitAST - Classe base per tutti i nodi inizializzazione
 class InitAST : public virtual RootAST{
@@ -104,9 +104,10 @@ public:
 class VariableExprAST : public ExprAST {
 private:
   std::string Name;
+  ExprAST *Index;
   
 public:
-  VariableExprAST(const std::string &Name);
+  VariableExprAST(const std::string &Name, ExprAST* Index);
   lexval getLexVal() const override;
   Value *codegen(driver& drv) override;
 };
@@ -182,8 +183,9 @@ public:
 class AssignmentExprAST : public ExprAST, public InitAST {
 private:
   ExprAST* Val;
+  ExprAST* Index;
 public:
-  AssignmentExprAST(const std::string Name, ExprAST* Val);
+  AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index);
   Value * codegen(driver& drv) override;
 };
 
@@ -192,8 +194,11 @@ public:
 class VarBindingAST: public InitAST {
 private:
   ExprAST* Val;
+  double* Index;
+  std::vector<ExprAST*> Elems;
 public:
   VarBindingAST(const std::string Name, ExprAST* Val);
+  VarBindingAST(const std::string Name, double* Index, std::vector<ExprAST*> Elems);
   AllocaInst *codegen(driver& drv) override;
 };
 

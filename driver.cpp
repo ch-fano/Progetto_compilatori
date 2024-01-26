@@ -12,6 +12,11 @@ Value *LogErrorV(const std::string Str) {
   return nullptr;
 }
 
+llvm::ConstantInt* ValueToInt(Value * Val){
+  llvm::ConstantFP* ValD = dyn_cast<llvm::ConstantFP>(Val);
+  return dyn_cast<llvm::ConstantInt>(ValD);
+}
+
 /* Il codice seguente sulle prime non è semplice da comprendere.
    Esso definisce una utility (funzione C++) con due parametri:
    1) la rappresentazione di una funzione llvm IR, e
@@ -24,9 +29,9 @@ Value *LogErrorV(const std::string Str) {
    interferire con il builder globale, la generazione viene dunque effettuata
    con un builder temporaneo TmpB
 */
-static AllocaInst *CreateEntryBlockAlloca(Function *fun, StringRef VarName) {
+static AllocaInst *CreateEntryBlockAlloca(Function *fun, StringRef VarName, Type* T = Type::getDoubleTy(*context)) {
   IRBuilder<> TmpB(&fun->getEntryBlock(), fun->getEntryBlock().begin());
-  return TmpB.CreateAlloca(Type::getDoubleTy(*context), nullptr, VarName);
+  return TmpB.CreateAlloca(T, nullptr, VarName);
 }
 
 // Implementazione del costruttore della classe driver
@@ -85,7 +90,7 @@ Value *NumberExprAST::codegen(driver& drv) {
 };
 
 /******************** Variable Expression Tree ********************/
-VariableExprAST::VariableExprAST(const std::string &Name): Name(Name) {};
+VariableExprAST::VariableExprAST(const std::string &Name, ExprAST *Index=nullptr): Name(Name), Index(Index){};
 
 lexval VariableExprAST::getLexVal() const {
   lexval lval = Name;
@@ -104,13 +109,33 @@ lexval VariableExprAST::getLexVal() const {
 // il nome del registro in cui verrà trasferito il valore dalla memoria
 Value *VariableExprAST::codegen(driver& drv) {
   AllocaInst *A = drv.NamedValues[Name];
-  if (!A){
-     GlobalVariable *B = module->getNamedGlobal(Name);
-     if(!B)
-      return LogErrorV("Variabile "+Name+" non definita");
-     return builder->CreateLoad(B->getValueType(), B, Name.c_str());
+  
+  if(!Index){
+    if (!A){
+      GlobalVariable *B = module->getNamedGlobal(Name);
+
+      if(!B)
+        return LogErrorV("Variabile "+Name+" non definita");
+      return builder->CreateLoad(B->getValueType(), B, Name.c_str());
+    }
+
+    return builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
   }
-  return builder->CreateLoad(A->getAllocatedType(), A, Name.c_str());
+  else{
+    if(!A)
+      return LogErrorV("Variabile "+Name+" non definita");
+    
+    Value * IdxVal = Index->codegen(drv);
+    llvm::ConstantInt* IdxInt = ValueToInt(IdxVal);
+
+    llvm::ConstantInt* Size= ValueToInt(A->getArraySize());
+
+    //#CHECK -> forse necessario controllo sull'indice
+
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *dyn_cast<u_int64_t>(Size));
+    return builder->CreateInBoundsGEP(AT, A, IdxInt);
+  }
+
 }
 
 /************************* Global Variable Ecpression Tree *************************/
@@ -467,8 +492,8 @@ Value* BlockExprAST::codegen(driver& drv) {
 };
 
 /********************** Assignment Expression Tree *********************/
-AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val): 
-    InitAST(Name), Val(Val) {};
+AssignmentExprAST::AssignmentExprAST(const std::string Name, ExprAST* Val, ExprAST* Index=nullptr): 
+    InitAST(Name), Val(Val), Index(Index) {};
 
 Value* AssignmentExprAST::codegen(driver& drv) {
    
@@ -478,15 +503,35 @@ Value* AssignmentExprAST::codegen(driver& drv) {
      return nullptr;
 
    AllocaInst *AllocaTmp = drv.NamedValues[this->getName()];
-   if (!AllocaTmp){
-    GlobalVariable *GlobalTmp = module->getNamedGlobal(this->getName());
-    if(!GlobalTmp)
+   
+   if(!Index){
+    if (!AllocaTmp){
+      GlobalVariable *GlobalTmp = module->getNamedGlobal(this->getName());
+
+      if(!GlobalTmp)
+        return LogErrorV("Variabile "+this->getName()+" non definita");
+
+      builder->CreateStore(BoundVal, GlobalTmp);
+    } else
+        builder->CreateStore(BoundVal, AllocaTmp);
+   }
+   else
+   {
+    if (!AllocaTmp)
       return LogErrorV("Variabile "+this->getName()+" non definita");
 
-    builder->CreateStore(BoundVal, GlobalTmp);
-   } else
-      builder->CreateStore(BoundVal, AllocaTmp);
+    Value *IdxVal = Index->codegen(drv);
+    llvm::ConstantInt* IdxInt = ValueToInt(IdxVal);
+
+    llvm::ConstantInt* Size= ValueToInt(AllocaTmp->getArraySize());
+
+    //#CHECK -> forse necessario controllo sull'indice
+
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *dyn_cast<u_int64_t>(Size));
+    Value *Elem = builder->CreateInBoundsGEP(AT, AllocaTmp, IdxInt);
     
+    builder->CreateStore(BoundVal, Elem);
+   }  
    return BoundVal; 
 };
 
@@ -506,7 +551,11 @@ const std::string& InitAST::getName() const {
 
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
-   InitAST(Name), Val(Val) {};
+   InitAST(Name), Val(Val), Index(nullptr) {};
+
+VarBindingAST::VarBindingAST(const std::string Name, double* Index, std::vector<ExprAST*> Elems):
+   InitAST(Name), Val(nullptr), Index(Index), Elems(std::move(Elems)){};
+
 
 AllocaInst* VarBindingAST::codegen(driver& drv) {
    // Viene subito recuperato il riferimento alla funzione in cui si trova
@@ -517,14 +566,29 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
    // l'allocazione viene fatta tramite l'utility CreateEntryBlockAlloca
    Function *fun = builder->GetInsertBlock()->getParent();
    // Ora viene generato il codice che definisce il valore della variabile
+
    Value *BoundVal;
    if(Val){
     BoundVal = Val->codegen(drv);
     if (!BoundVal)  // Qualcosa è andato storto nella generazione del codice?
       return nullptr;
    }
+
    // Se tutto ok, si genera l'struzione che alloca memoria per la variabile ...
-   AllocaInst *Alloca = CreateEntryBlockAlloca(fun, this->getName());
+  AllocaInst *Alloca;
+  if(!Index)
+    Alloca = CreateEntryBlockAlloca(fun, this->getName());
+  else{
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context),static_cast<int>(*Index));
+    Alloca = CreateEntryBlockAlloca(fun, this->getName(), AT);
+
+    for(int i=0; i<Elems.size(); i++){
+      Value* ExpVal = Elems[i]->codegen(drv);
+      Value* ArrayElem = builder->CreateInBoundsGEP(AT, Alloca, ConstantInt::get(*context, APInt(32, i, true)));
+
+      builder->CreateStore(ExpVal, ArrayElem);
+    }
+  }
    // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
    // ovvero il contenuto del registro BoundVal
    if(Val)

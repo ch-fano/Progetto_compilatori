@@ -166,7 +166,7 @@ init:
 
 assignment:
   "id" "=" exp                { $$ = new AssignmentExprAST($1, $3); }
-| "id" "[" exp "]" "=" exp    { #TODO }
+| "id" "[" exp "]" "=" exp    { $$ = new AssignmentExprAST($1, $6, $3); }
 | "++" "id"                   { ExprAST * var= new VariableExprAST($2);
                                 ExprAST * num = new NumberExprAST(1.0);
                                 ExprAST * expr = new BinaryExprAST('+', var, num);
@@ -211,8 +211,9 @@ vardefs:
                             
 binding:
   "var" "id" initexp                                  { $$ = new VarBindingAST($2,$3); }
-| "var" "id" "[" "number" "]"                         { #TODO }
-| "var" "id" "[" "number" "]" "=" "{" explist "}"     { #TODO}
+| "var" "id" "[" "number" "]"                         { std::vector<ExprAST*> Elems;
+                                                        $$ = new VarBindingAST($2, $4, Elems); }
+| "var" "id" "[" "number" "]" "=" "{" explist "}"     { $$ = new VarBindingAST($2, $4, $8); }
 
 initexp:
   %empty                  { $$ = nullptr; }
@@ -234,8 +235,8 @@ relexp:
 
 idexp:
   "id"                  { $$ = new VariableExprAST($1); }
-| "id" "(" optexp ")"   { $$ = new CallExprAST($1,$3); };
-| "id" "[" exp "]"      { #TODO }
+| "id" "(" optexp ")"   { $$ = new CallExprAST($1,$3); }
+| "id" "[" exp "]"      { $$ = new VariableExprAST($1, $3); };
 
 optexp:
   %empty                { std::vector<ExprAST*> args;
