@@ -129,10 +129,13 @@ Value *VariableExprAST::codegen(driver& drv) {
     Value* IdxInt = ValueToInt(IdxVal);
 
     //#CHECK -> forse necessario controllo sull'indice
+    Value* Elem;
     if(!LocalTmp)
-      return builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);
+      Elem = builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);
     else
-      return builder->CreateInBoundsGEP(LocalTmp->getType(), GlobalTmp, IdxInt);
+      Elem = builder->CreateInBoundsGEP(LocalTmp->getType(), LocalTmp, IdxInt);
+    
+    return builder->CreateLoad(Type::getDoubleTy(*context), Elem, Name.c_str()); 
   }
 
 }
@@ -248,8 +251,8 @@ Value* CallExprAST::codegen(driver& drv) {
 }
 
 /************************* If Expression Tree *************************/
-IfExprAST::IfExprAST(ExprAST* Cond, ExprAST* TrueExp, ExprAST* FalseExp):
-   Cond(Cond), TrueExp(TrueExp), FalseExp(FalseExp) {};
+IfExprAST::IfExprAST(ExprAST* Cond, ExprAST* TrueExp, ExprAST* FalseExp, bool IsExpr):
+   Cond(Cond), TrueExp(TrueExp), FalseExp(FalseExp), IsExpr(IsExpr) {};
    
 Value* IfExprAST::codegen(driver& drv) {
     // Viene dapprima generato il codice per valutare la condizione, che
@@ -303,7 +306,7 @@ Value* IfExprAST::codegen(driver& drv) {
     Value *FalseV;
 
     if(!FalseExp)
-      FalseV = NumberExprAST(0.0).codegen(drv);
+      FalseV = ConstantFP::getNullValue(Type::getDoubleTy(*context));
     else{
       FalseV = FalseExp->codegen(drv);
       if (!FalseV)
@@ -332,8 +335,18 @@ Value* IfExprAST::codegen(driver& drv) {
     // 2) Per ogni possibile nodo sorgente, viene poi inserita l'etichetta e il registro
     //    SSA da cui prelevare il valore 
     PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
-    PN->addIncoming(TrueV, TrueBB);
-    PN->addIncoming(FalseV, FalseBB);
+    if(IsExpr){
+
+      PN->addIncoming(TrueV, TrueBB);
+      PN->addIncoming(FalseV, FalseBB);
+    
+    }else
+    {
+
+      PN->addIncoming(NumberExprAST(0.0).codegen(drv), TrueBB);
+      PN->addIncoming(NumberExprAST(1.0).codegen(drv), FalseBB);
+
+    }
     return PN;
 };
 
@@ -431,6 +444,7 @@ Value* ForExprAST::codegen(driver& drv) {
     // 1) Dapprima si crea il nodo PHI specificando quanti sono i possibili nodi sorgente
     // 2) Per ogni possibile nodo sorgente, viene poi inserita l'etichetta e il registro
     //    SSA da cui prelevare il valore 
+
     PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
     PN->addIncoming(BodyV, CondBB);
     PN->addIncoming(NumberExprAST(1.0).codegen(drv), StartBB);

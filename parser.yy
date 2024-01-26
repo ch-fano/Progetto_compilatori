@@ -221,7 +221,7 @@ initexp:
 | "=" exp                 { $$ = $2; }
                       
 expif:
-  condexp "?" exp ":" exp { $$ = new IfExprAST($1,$3,$5); }
+  condexp "?" exp ":" exp { $$ = new IfExprAST($1,$3,$5, true); }
 
 condexp:
   relexp                  { $$ = $1; }
