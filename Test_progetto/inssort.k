@@ -8,12 +8,27 @@ def inssort() {
        var pivot = A[i];
        var step = 1;
        for (var j = i-1; -1<j; j=j-step)
-           if (pivot < A[j]) A[j+1] = A[j]
+           if (pivot < A[j]){ 
+            A[j+1] = A[j];
+            printval(0,1);
+            printval(A[j+1],0);
+            printval(A[j],0)
+            }
            else {
              A[j+1] = pivot;
+             printval(0,1);
+             printval(A[j+1],0);
+            printval(pivot,0);
              step = 10
            };
-       if (step==1) A[0] = pivot
+       if (step==1){
+          A[0] = pivot;
+         printval(0,1);
+         printval(0,1);
+         printval(0,1);
+         printval(A[0],0);
+         printval(pivot,0)
+       }
     }
 };
 def main() {
@@ -24,7 +39,12 @@ def main() {
      printval(A[i],0)
   };
   printval(0,1);
+  printval(0,1);
   inssort();
-  for (var i=0; i<10; ++i)
+  printval(0,1);
+  printval(0,1);
+  for (var i=0; i<10; ++i){
+      printval(i, 0);
      printval(A[i],0)
+  }
 };

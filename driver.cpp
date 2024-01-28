@@ -123,6 +123,8 @@ Value *VariableExprAST::codegen(driver& drv) {
   
   }
   else{
+    //è un array
+
     Value * IdxVal = Index->codegen(drv);
     if(!IdxVal)
       return nullptr;
@@ -158,6 +160,9 @@ GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
     globalvar = new GlobalVariable(*module, PointerType::getDoubleTy(*context), false, linkage, ConstantFP::getNullValue(Type::getDoubleTy(*context)), Name);
   
   else{
+    if(*Size<=0){
+      LogErrorV("Dimensione errata"+std::to_string(*Size));
+      return nullptr;}
 
     ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
     globalvar = new GlobalVariable(*module, AT, false, linkage, ConstantFP::getNullValue(AT), Name);
@@ -305,6 +310,7 @@ Value* IfExprAST::codegen(driver& drv) {
     builder->SetInsertPoint(FalseBB);
     Value *FalseV;
 
+    //se non è presente l'espressione del ramo False setto il risultato a 0 
     if(!FalseExp)
       FalseV = ConstantFP::getNullValue(Type::getDoubleTy(*context));
     else{
@@ -336,7 +342,7 @@ Value* IfExprAST::codegen(driver& drv) {
     //    SSA da cui prelevare il valore 
     PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
     if(IsExpr){
-
+      //restituisco il risultato dei due rami solamente se si tratta di un Expression If
       PN->addIncoming(TrueV, TrueBB);
       PN->addIncoming(FalseV, FalseBB);
     
@@ -391,7 +397,7 @@ Value* ForExprAST::codegen(driver& drv) {
     BasicBlock *CondBB = BasicBlock::Create(*context, "forcond");
     BasicBlock *EndBB = BasicBlock::Create(*context, "endcond");
     // Gli altri due blocchi non vengono ancora inseriti perché le istruzioni
-    // previste nel "ramo" body del condizionale potrebbe dare luogo alla creazione
+    // previste nel "ramo" body potrebbe dare luogo alla creazione
     // di altri blocchi, che naturalmente andrebbero inseriti prima di CondBB
     
     // Ora possiamo creare l'istruzione di salto condizionato
@@ -435,16 +441,6 @@ Value* ForExprAST::codegen(driver& drv) {
     // di esecuzione si riuniscono. Impostiamo correttamente il builder
     builder->SetInsertPoint(EndBB);
   
-    // Il codice di riunione dei flussi è una "semplice" istruzione PHI: 
-    //a seconda del blocco da cui arriva il flusso, TrueBB o FalseBB, il valore
-    // del costrutto condizionale (si ricordi che si tratta di un "expression if")
-    // deve essere copiato (in un nuovo registro SSA) da TrueV o da FalseV
-    // La creazione di un'istruzione PHI avviene però in due passi, in quanto
-    // il numero di "flussi entranti" non è fissato.
-    // 1) Dapprima si crea il nodo PHI specificando quanti sono i possibili nodi sorgente
-    // 2) Per ogni possibile nodo sorgente, viene poi inserita l'etichetta e il registro
-    //    SSA da cui prelevare il valore 
-
     PHINode *PN = builder->CreatePHI(Type::getDoubleTy(*context), 2, "condval");
     PN->addIncoming(BodyV, CondBB);
     PN->addIncoming(NumberExprAST(1.0).codegen(drv), StartBB);
@@ -505,8 +501,8 @@ Value* BlockExprAST::codegen(driver& drv) {
       Stmt[i]->codegen(drv);
    
    Value *blockvalue = Stmt[Stmt.size()-1]->codegen(drv);
-      if (!blockvalue)
-         return nullptr;
+   if (!blockvalue)
+      return nullptr;
    // Prima di uscire dal blocco, si ripristina lo scope esterno al costrutto
    for (int i=0, e=Def.size(); i<e; i++) {
         drv.NamedValues[Def[i]->getName()] = AllocaTmp[i];
@@ -543,20 +539,21 @@ Value* AssignmentExprAST::codegen(driver& drv) {
    }
    else
    {
+    //è un array
 
     Value *IdxVal = Index->codegen(drv);
     if(!IdxVal)
       return nullptr;
     Value* IdxInt = ValueToInt(IdxVal);
 
-    //#CHECK -> forse necessario controllo sull'indice
+    //#CHECK -> forse necessario controllo sull'indice;
 
     Value *Elem;
 
-    if(!GlobalTmp)
-      Elem = builder->CreateInBoundsGEP(AllocaTmp->getType(), AllocaTmp, IdxInt);
+    if(!AllocaTmp)
+      Elem = builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);
     else
-      Elem = builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);  
+      Elem = builder->CreateInBoundsGEP(AllocaTmp->getType(), AllocaTmp, IdxInt);  
 
     builder->CreateStore(BoundVal, Elem);
 
@@ -617,6 +614,10 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
 
   }
   else{
+    //è un array
+    
+    if(*Size<=0)
+      return nullptr;
 
     ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
     Alloca = CreateEntryBlockAlloca(fun, this->getName(), AT);

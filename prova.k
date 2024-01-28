@@ -1,18 +1,13 @@
-global a;
-global n;
-def fun() {
-   var a = 0;
-   var b = 0;
-   
-   if (a == 0)
-      n = 10
-   else
-      n = 5
-   ;
-   for (var i = 0; i < n; ++i) {
-      for (var j = n; 0 < j; --j)
-         for(var k = n; 0 < n; --k)
-            ++b
-   };
-   b 
+extern printval(x controlchar);
+global A[10];
+def main() {
+  for (var i=0; i<10; ++i) {
+     A[i] = randk();
+     printval(A[i],0)
+  };
+  printval(0,1);
+  inssort();
+  for (var i=0; i<10; ++i)
+     printval(A[i],0)
 };
+
