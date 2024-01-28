@@ -143,7 +143,7 @@ Value *VariableExprAST::codegen(driver& drv) {
 }
 
 /************************* Global Variable Ecpression Tree *************************/
-GlobalVarExprAST::GlobalVarExprAST(const std::string Name, double* Size):
+GlobalVarExprAST::GlobalVarExprAST(const std::string Name, double Size):
   Name(Name), Size(Size){};
    
 const std::string& GlobalVarExprAST::getName() const { 
@@ -155,16 +155,17 @@ GlobalVariable *GlobalVarExprAST::codegen(driver& drv) {
   GlobalValue::LinkageTypes linkage = GlobalValue::CommonLinkage;
   GlobalVariable *globalvar;
 
-  if(!Size)
+  if(Size==1)
   
     globalvar = new GlobalVariable(*module, PointerType::getDoubleTy(*context), false, linkage, ConstantFP::getNullValue(Type::getDoubleTy(*context)), Name);
   
   else{
-    if(*Size<=0){
-      LogErrorV("Dimensione errata"+std::to_string(*Size));
-      return nullptr;}
+    if(Size<=0){
+      LogErrorV("Dimensione errata"+std::to_string(Size));
+      return nullptr;
+    }
 
-    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), Size);
     globalvar = new GlobalVariable(*module, AT, false, linkage, ConstantFP::getNullValue(AT), Name);
 
   }
@@ -577,9 +578,9 @@ const std::string& InitAST::getName() const {
 
 /************************* Var binding Tree *************************/
 VarBindingAST::VarBindingAST(const std::string Name, ExprAST* Val):
-   InitAST(Name), Val(Val), Size(nullptr) {};
+   InitAST(Name), Val(Val), Size(1) {};
 
-VarBindingAST::VarBindingAST(const std::string Name, double* Size, std::vector<ExprAST*> Elems):
+VarBindingAST::VarBindingAST(const std::string Name, double Size, std::vector<ExprAST*> Elems):
    InitAST(Name), Val(nullptr), Size(Size), Elems(std::move(Elems)){};
 
 
@@ -604,7 +605,7 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
 
    // Se tutto ok, si genera l'struzione che alloca memoria per la variabile ...
   AllocaInst *Alloca;
-  if(!Size){
+  if(Size==1){
 
     Alloca = CreateEntryBlockAlloca(fun, this->getName());
     // ... e si genera l'istruzione per memorizzarvi il valore dell'espressione,
@@ -616,10 +617,12 @@ AllocaInst* VarBindingAST::codegen(driver& drv) {
   else{
     //è un array
     
-    if(*Size<=0)
+    if(Size<=0){
+      LogErrorV("Dimensione errata"+std::to_string(Size));
       return nullptr;
+    }
 
-    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), *Size);
+    ArrayType *AT = ArrayType::get(Type::getDoubleTy(*context), Size);
     Alloca = CreateEntryBlockAlloca(fun, this->getName(), AT);
 
     for(int i=0; i<Elems.size(); i++){

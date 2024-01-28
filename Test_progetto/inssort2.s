@@ -1,5 +1,5 @@
 	.text
-	.file	"inssort.ll"
+	.file	"inssort2.ll"
 	.section	.rodata.cst8,"aM",@progbits,8
 	.p2align	3, 0x0                          # -- Begin function inssort
 .LCPI0_0:
@@ -17,96 +17,78 @@ inssort:                                # @inssort
 # %bb.0:                                # %entry
 	movabsq	$4607182418800017408, %rax      # imm = 0x3FF0000000000000
 	movq	%rax, -24(%rsp)
-	xorl	%ecx, %ecx
-	testb	%cl, %cl
-	jne	.LBB0_11
+	xorl	%eax, %eax
+	testb	%al, %al
+	jne	.LBB0_7
 # %bb.1:                                # %forbody.preheader
-	movq	A@GOTPCREL(%rip), %rcx
+	movq	A@GOTPCREL(%rip), %rax
 	movsd	.LCPI0_1(%rip), %xmm1           # xmm1 = mem[0],zero
 	movsd	.LCPI0_0(%rip), %xmm2           # xmm2 = mem[0],zero
-	movabsq	$4621819117588971520, %rdx      # imm = 0x4024000000000000
 	movsd	.LCPI0_2(%rip), %xmm3           # xmm3 = mem[0],zero
-	jmp	.LBB0_4
+	jmp	.LBB0_3
 	.p2align	4, 0x90
-.LBB0_2:                                # %endcond22
-                                        #   in Loop: Header=BB0_4 Depth=1
-	ucomisd	-8(%rsp), %xmm2
-	movapd	%xmm2, %xmm0
-	je	.LBB0_10
-.LBB0_3:                                # %endcond28
-                                        #   in Loop: Header=BB0_4 Depth=1
+.LBB0_2:                                # %endcond
+                                        #   in Loop: Header=BB0_3 Depth=1
+	movsd	-8(%rsp), %xmm0                 # xmm0 = mem[0],zero
+	movsd	-16(%rsp), %xmm4                # xmm4 = mem[0],zero
+	addsd	%xmm2, %xmm4
+	cvtsd2ss	%xmm4, %xmm4
+	cvttss2si	%xmm4, %ecx
+	movslq	%ecx, %rcx
+	movsd	%xmm0, (%rax,%rcx,8)
 	movsd	-24(%rsp), %xmm4                # xmm4 = mem[0],zero
 	addsd	%xmm2, %xmm4
 	movsd	%xmm4, -24(%rsp)
 	ucomisd	%xmm3, %xmm4
-	jae	.LBB0_12
-.LBB0_4:                                # %forbody
+	jae	.LBB0_8
+.LBB0_3:                                # %forbody
                                         # =>This Loop Header: Depth=1
-                                        #     Child Loop BB0_7 Depth 2
+                                        #     Child Loop BB0_4 Depth 2
 	movsd	-24(%rsp), %xmm0                # xmm0 = mem[0],zero
 	xorps	%xmm4, %xmm4
 	cvtsd2ss	%xmm0, %xmm4
-	cvttss2si	%xmm4, %esi
-	movslq	%esi, %rsi
-	movsd	(%rcx,%rsi,8), %xmm4            # xmm4 = mem[0],zero
-	movsd	%xmm4, -16(%rsp)
-	movq	%rax, -8(%rsp)
+	cvttss2si	%xmm4, %ecx
+	movslq	%ecx, %rcx
+	movsd	(%rax,%rcx,8), %xmm4            # xmm4 = mem[0],zero
+	movsd	%xmm4, -8(%rsp)
 	addsd	%xmm1, %xmm0
-	jmp	.LBB0_7
-	.p2align	4, 0x90
-.LBB0_5:                                # %falseexp
-                                        #   in Loop: Header=BB0_7 Depth=2
-	movsd	-16(%rsp), %xmm0                # xmm0 = mem[0],zero
-	movsd	-32(%rsp), %xmm4                # xmm4 = mem[0],zero
-	addsd	%xmm2, %xmm4
-	cvtsd2ss	%xmm4, %xmm4
-	cvttss2si	%xmm4, %esi
-	movslq	%esi, %rsi
-	movsd	%xmm0, (%rcx,%rsi,8)
-	movq	%rdx, -8(%rsp)
-.LBB0_6:                                # %endcond
-                                        #   in Loop: Header=BB0_7 Depth=2
-	movsd	-32(%rsp), %xmm0                # xmm0 = mem[0],zero
-	subsd	-8(%rsp), %xmm0
-.LBB0_7:                                # %forbody
-                                        #   Parent Loop BB0_4 Depth=1
-                                        # =>  This Inner Loop Header: Depth=2
-	movsd	%xmm0, -32(%rsp)
+	movsd	%xmm0, -16(%rsp)
 	ucomisd	%xmm0, %xmm1
 	jae	.LBB0_2
-# %bb.8:                                # %forbody6
-                                        #   in Loop: Header=BB0_7 Depth=2
+	.p2align	4, 0x90
+.LBB0_4:                                # %forbody
+                                        #   Parent Loop BB0_3 Depth=1
+                                        # =>  This Inner Loop Header: Depth=2
+	cvtsd2ss	%xmm0, %xmm0
+	cvttss2si	%xmm0, %ecx
+	movslq	%ecx, %rcx
+	ucomisd	(%rax,%rcx,8), %xmm4
+	jae	.LBB0_2
+# %bb.5:                                # %forbody10
+                                        #   in Loop: Header=BB0_4 Depth=2
 	movsd	-16(%rsp), %xmm0                # xmm0 = mem[0],zero
-	movsd	-32(%rsp), %xmm4                # xmm4 = mem[0],zero
-	cvtsd2ss	%xmm4, %xmm4
-	cvttss2si	%xmm4, %esi
-	movslq	%esi, %rsi
-	ucomisd	(%rcx,%rsi,8), %xmm0
-	jae	.LBB0_5
-# %bb.9:                                # %trueexp
-                                        #   in Loop: Header=BB0_7 Depth=2
-	movsd	-32(%rsp), %xmm0                # xmm0 = mem[0],zero
 	xorps	%xmm4, %xmm4
 	cvtsd2ss	%xmm0, %xmm4
-	cvttss2si	%xmm4, %esi
-	movslq	%esi, %rsi
-	movsd	(%rcx,%rsi,8), %xmm4            # xmm4 = mem[0],zero
-	addsd	%xmm2, %xmm0
-	cvtsd2ss	%xmm0, %xmm0
-	cvttss2si	%xmm0, %esi
-	movslq	%esi, %rsi
-	movsd	%xmm4, (%rcx,%rsi,8)
-	jmp	.LBB0_6
-	.p2align	4, 0x90
-.LBB0_10:                               # %trueexp25
-                                        #   in Loop: Header=BB0_4 Depth=1
-	movsd	-16(%rsp), %xmm0                # xmm0 = mem[0],zero
-	movsd	%xmm0, (%rcx)
-	xorpd	%xmm0, %xmm0
-	jmp	.LBB0_3
-.LBB0_11:
+	cvttss2si	%xmm4, %ecx
+	movslq	%ecx, %rcx
+	movsd	(%rax,%rcx,8), %xmm4            # xmm4 = mem[0],zero
+	movaps	%xmm0, %xmm5
+	addsd	%xmm2, %xmm5
+	cvtsd2ss	%xmm5, %xmm5
+	cvttss2si	%xmm5, %ecx
+	movslq	%ecx, %rcx
+	movsd	%xmm4, (%rax,%rcx,8)
+	addsd	%xmm1, %xmm0
+	movsd	%xmm0, -16(%rsp)
+	ucomisd	%xmm0, %xmm1
+	jae	.LBB0_2
+# %bb.6:                                # %forbody10
+                                        #   in Loop: Header=BB0_4 Depth=2
+	movsd	-8(%rsp), %xmm4                 # xmm4 = mem[0],zero
+	jmp	.LBB0_4
+.LBB0_7:
 	movsd	.LCPI0_0(%rip), %xmm0           # xmm0 = mem[0],zero
-.LBB0_12:                               # %endcond35
+.LBB0_8:                                # %endcond31
 	retq
 .Lfunc_end0:
 	.size	inssort, .Lfunc_end0-inssort

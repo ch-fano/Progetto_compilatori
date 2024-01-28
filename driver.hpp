@@ -116,9 +116,9 @@ public:
 class GlobalVarExprAST: public ExprAST {
 private:
   const std::string Name;
-  double* Size;
+  double Size;
 public:
-  GlobalVarExprAST(const std::string Name, double* Size = nullptr);
+  GlobalVarExprAST(const std::string Name, double Size = 1);
   GlobalVariable *codegen(driver& drv) override;
   const std::string& getName() const;
 };
@@ -196,11 +196,11 @@ public:
 class VarBindingAST: public InitAST {
 private:
   ExprAST* Val;
-  double* Size;
+  double Size;
   std::vector<ExprAST*> Elems;
 public:
   VarBindingAST(const std::string Name, ExprAST* Val);
-  VarBindingAST(const std::string Name, double* Size, std::vector<ExprAST*> Elems);
+  VarBindingAST(const std::string Name, double Size, std::vector<ExprAST*> Elems);
   AllocaInst *codegen(driver& drv) override;
 };
 

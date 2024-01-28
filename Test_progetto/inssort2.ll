@@ -10,40 +10,36 @@ declare double @printval(double, double)
 define double @inssort() {
 entry:
   %j = alloca double, align 8
-  %step = alloca double, align 8
   %pivot = alloca double, align 8
   %i = alloca double, align 8
   store double 1.000000e+00, ptr %i, align 8
   %i1 = load double, ptr %i, align 8
   %lttest = fcmp ult double %i1, 1.000000e+01
-  br i1 %lttest, label %forbody, label %endcond35
+  br i1 %lttest, label %forbody, label %endcond31
 
-forbody:                                          ; preds = %forcond30, %entry
+forbody:                                          ; preds = %forcond26, %entry
   %i2 = load double, ptr %i, align 8
   %0 = fptrunc double %i2 to float
   %1 = fptosi float %0 to i32
   %2 = getelementptr inbounds ptr, ptr @A, i32 %1
   %A = load double, ptr %2, align 8
   store double %A, ptr %pivot, align 8
-  store double 1.000000e+00, ptr %step, align 8
   %i3 = load double, ptr %i, align 8
   %subres = fsub double %i3, 1.000000e+00
   store double %subres, ptr %j, align 8
   %j4 = load double, ptr %j, align 8
   %lttest5 = fcmp ult double -1.000000e+00, %j4
-  br i1 %lttest5, label %forbody6, label %endcond22
-
-forbody6:                                         ; preds = %forcond, %forbody
-  %pivot7 = load double, ptr %pivot, align 8
-  %j8 = load double, ptr %j, align 8
-  %3 = fptrunc double %j8 to float
+  %pivot6 = load double, ptr %pivot, align 8
+  %j7 = load double, ptr %j, align 8
+  %3 = fptrunc double %j7 to float
   %4 = fptosi float %3 to i32
   %5 = getelementptr inbounds ptr, ptr @A, i32 %4
-  %A9 = load double, ptr %5, align 8
-  %lttest10 = fcmp ult double %pivot7, %A9
-  br i1 %lttest10, label %trueexp, label %falseexp
+  %A8 = load double, ptr %5, align 8
+  %lttest9 = fcmp ult double %pivot6, %A8
+  %andtest = and i1 %lttest5, %lttest9
+  br i1 %andtest, label %forbody10, label %endcond
 
-trueexp:                                          ; preds = %forbody6
+forbody10:                                        ; preds = %forcond, %forbody
   %j11 = load double, ptr %j, align 8
   %6 = fptrunc double %j11 to float
   %7 = fptosi float %6 to i32
@@ -55,61 +51,46 @@ trueexp:                                          ; preds = %forbody6
   %10 = fptosi float %9 to i32
   %11 = getelementptr inbounds ptr, ptr @A, i32 %10
   store double %A12, ptr %11, align 8
-  br label %endcond
-
-falseexp:                                         ; preds = %forbody6
-  %pivot14 = load double, ptr %pivot, align 8
-  %j15 = load double, ptr %j, align 8
-  %addres16 = fadd double %j15, 1.000000e+00
-  %12 = fptrunc double %addres16 to float
-  %13 = fptosi float %12 to i32
-  %14 = getelementptr inbounds ptr, ptr @A, i32 %13
-  store double %pivot14, ptr %14, align 8
-  store double 1.000000e+01, ptr %step, align 8
-  br label %endcond
-
-endcond:                                          ; preds = %falseexp, %trueexp
-  %condval = phi double [ 0.000000e+00, %trueexp ], [ 1.000000e+00, %falseexp ]
   br label %forcond
 
-forcond:                                          ; preds = %endcond
-  %j17 = load double, ptr %j, align 8
-  %step18 = load double, ptr %step, align 8
-  %subres19 = fsub double %j17, %step18
-  store double %subres19, ptr %j, align 8
-  %j20 = load double, ptr %j, align 8
-  %lttest21 = fcmp ult double -1.000000e+00, %j20
-  br i1 %lttest21, label %forbody6, label %endcond22
+forcond:                                          ; preds = %forbody10
+  %j14 = load double, ptr %j, align 8
+  %subres15 = fsub double %j14, 1.000000e+00
+  store double %subres15, ptr %j, align 8
+  %j16 = load double, ptr %j, align 8
+  %lttest17 = fcmp ult double -1.000000e+00, %j16
+  %pivot18 = load double, ptr %pivot, align 8
+  %j19 = load double, ptr %j, align 8
+  %12 = fptrunc double %j19 to float
+  %13 = fptosi float %12 to i32
+  %14 = getelementptr inbounds ptr, ptr @A, i32 %13
+  %A20 = load double, ptr %14, align 8
+  %lttest21 = fcmp ult double %pivot18, %A20
+  %andtest22 = and i1 %lttest17, %lttest21
+  br i1 %andtest22, label %forbody10, label %endcond
 
-endcond22:                                        ; preds = %forcond, %forbody
-  %condval23 = phi double [ %condval, %forcond ], [ 1.000000e+00, %forbody ]
-  %step24 = load double, ptr %step, align 8
-  %eqtest = fcmp ueq double %step24, 1.000000e+00
-  br i1 %eqtest, label %trueexp25, label %falseexp27
+endcond:                                          ; preds = %forcond, %forbody
+  %condval = phi double [ %A12, %forcond ], [ 1.000000e+00, %forbody ]
+  %pivot23 = load double, ptr %pivot, align 8
+  %j24 = load double, ptr %j, align 8
+  %addres25 = fadd double %j24, 1.000000e+00
+  %15 = fptrunc double %addres25 to float
+  %16 = fptosi float %15 to i32
+  %17 = getelementptr inbounds ptr, ptr @A, i32 %16
+  store double %pivot23, ptr %17, align 8
+  br label %forcond26
 
-trueexp25:                                        ; preds = %endcond22
-  %pivot26 = load double, ptr %pivot, align 8
-  store double %pivot26, ptr @A, align 8
-  br label %endcond28
+forcond26:                                        ; preds = %endcond
+  %i27 = load double, ptr %i, align 8
+  %addres28 = fadd double %i27, 1.000000e+00
+  store double %addres28, ptr %i, align 8
+  %i29 = load double, ptr %i, align 8
+  %lttest30 = fcmp ult double %i29, 1.000000e+01
+  br i1 %lttest30, label %forbody, label %endcond31
 
-falseexp27:                                       ; preds = %endcond22
-  br label %endcond28
-
-endcond28:                                        ; preds = %falseexp27, %trueexp25
-  %condval29 = phi double [ 0.000000e+00, %trueexp25 ], [ 1.000000e+00, %falseexp27 ]
-  br label %forcond30
-
-forcond30:                                        ; preds = %endcond28
-  %i31 = load double, ptr %i, align 8
-  %addres32 = fadd double %i31, 1.000000e+00
-  store double %addres32, ptr %i, align 8
-  %i33 = load double, ptr %i, align 8
-  %lttest34 = fcmp ult double %i33, 1.000000e+01
-  br i1 %lttest34, label %forbody, label %endcond35
-
-endcond35:                                        ; preds = %forcond30, %entry
-  %condval36 = phi double [ %condval29, %forcond30 ], [ 1.000000e+00, %entry ]
-  ret double %condval36
+endcond31:                                        ; preds = %forcond26, %entry
+  %condval32 = phi double [ %pivot23, %forcond26 ], [ 1.000000e+00, %entry ]
+  ret double %condval32
 }
 
 define double @main() {

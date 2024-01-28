@@ -967,7 +967,7 @@ namespace yy {
 
   case 13: // globalvar: "global" "id" "[" "number" "]"
 #line 132 "parser.yy"
-                                    { yylhs.value.as < GlobalVarExprAST* > () = new GlobalVarExprAST(yystack_[3].value.as < std::string > (), &yystack_[1].value.as < double > ()); }
+                                    { yylhs.value.as < GlobalVarExprAST* > () = new GlobalVarExprAST(yystack_[3].value.as < std::string > (), yystack_[1].value.as < double > ()); }
 #line 972 "parser.cpp"
     break;
 
@@ -1182,13 +1182,13 @@ namespace yy {
   case 46: // binding: "var" "id" "[" "number" "]"
 #line 215 "parser.yy"
                                                       { std::vector<ExprAST*> Elems;
-                                                        yylhs.value.as < VarBindingAST* > () = new VarBindingAST(yystack_[3].value.as < std::string > (), &yystack_[1].value.as < double > (), Elems); }
+                                                        yylhs.value.as < VarBindingAST* > () = new VarBindingAST(yystack_[3].value.as < std::string > (), yystack_[1].value.as < double > (), Elems); }
 #line 1187 "parser.cpp"
     break;
 
   case 47: // binding: "var" "id" "[" "number" "]" "=" "{" explist "}"
 #line 217 "parser.yy"
-                                                      { yylhs.value.as < VarBindingAST* > () = new VarBindingAST(yystack_[7].value.as < std::string > (), &yystack_[5].value.as < double > (), yystack_[1].value.as < std::vector<ExprAST*> > ()); }
+                                                      { yylhs.value.as < VarBindingAST* > () = new VarBindingAST(yystack_[7].value.as < std::string > (), yystack_[5].value.as < double > (), yystack_[1].value.as < std::vector<ExprAST*> > ()); }
 #line 1193 "parser.cpp"
     break;
 

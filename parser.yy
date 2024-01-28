@@ -129,7 +129,7 @@ proto:
 
 globalvar:
   "global" "id"                     { $$ = new GlobalVarExprAST($2); }
-| "global" "id" "[" "number" "]"    { $$ = new GlobalVarExprAST($2, &$4); }
+| "global" "id" "[" "number" "]"    { $$ = new GlobalVarExprAST($2, $4); }
 
 idseq:
   %empty                { std::vector<std::string> args;
@@ -213,8 +213,8 @@ vardefs:
 binding:
   "var" "id" initexp                                  { $$ = new VarBindingAST($2,$3); }
 | "var" "id" "[" "number" "]"                         { std::vector<ExprAST*> Elems;
-                                                        $$ = new VarBindingAST($2, &$4, Elems); }
-| "var" "id" "[" "number" "]" "=" "{" explist "}"     { $$ = new VarBindingAST($2, &$4, $8); }
+                                                        $$ = new VarBindingAST($2, $4, Elems); }
+| "var" "id" "[" "number" "]" "=" "{" explist "}"     { $$ = new VarBindingAST($2, $4, $8); }
 
 initexp:
   %empty                  { $$ = nullptr; }
