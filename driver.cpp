@@ -130,7 +130,6 @@ Value *VariableExprAST::codegen(driver& drv) {
       return nullptr;
     Value* IdxInt = ValueToInt(IdxVal);
 
-    //#CHECK -> forse necessario controllo sull'indice
     Value* Elem;
     if(!LocalTmp)
       Elem = builder->CreateInBoundsGEP(GlobalTmp->getType(), GlobalTmp, IdxInt);
@@ -546,8 +545,6 @@ Value* AssignmentExprAST::codegen(driver& drv) {
     if(!IdxVal)
       return nullptr;
     Value* IdxInt = ValueToInt(IdxVal);
-
-    //#CHECK -> forse necessario controllo sull'indice;
 
     Value *Elem;
 

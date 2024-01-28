@@ -181,10 +181,10 @@ assignment:
 %left ":" "?";
 %left "or";
 %left "and";
+%right "not";
 %left "<" "==";
 %left "+" "-";
 %left "*" "/";
-%right "not";
 
 
 exp:

@@ -1,9 +1,40 @@
-Versione relativa alla grammatica 1.0 
-Prodotto l'eseguibile, il comando
-./kcomp fn.k 
-(dove fn indica chiaramente il solo filename) scrive l'output su stderr.
-Per avere il file ll si può quindi digitare
-./kcomp fn.k 2> fn.ll
+Questa cartella contiene tutti i file per l'implementazione di un compilatore 
+per il linguaggio Kaleidoscope e la cartella Test_progetto per la verifica della grammatica
+fino al quarto livello. 
 
-Cambiamenti Makefile -> llvm-config diventa llvm-config-16
-Cambiamenti finish -> aggiunti -16 
+1) Grammatica di primo livello:
+    Introduce le classi GlobalVarExprAST e AssignmentExprAST per la gestione, rispettivamente,
+    della creazione di variabili globali e degli assegnamenti. Modifica inoltre la classe 
+    VariableExprAST per distinguere l'utilizzo di variabili globali da quello delle locali 
+    all'interno di un'espressione.
+
+2) Grammatica di secondo livello:
+    Introduce i costrutti if e for attraverso la classe ForExprAST e la modifica della classe 
+    preesistente IfExprAST. Introduce inoltre la classe InitAST da cui ereditano le classi
+    VarBindingAST e AssignmentExprAST utilizzate nella parte di inizilizzazione del costrutto for.
+
+3) Grammatica di terzo livello:
+    Introduce gli operatori and, or e not attraverso una modifica alla classe BinaryExprAST.
+
+4) Grammatica di quarto livello:
+    Introduce gli array attraverso le modifiche alle classi GlobalVarExprAST e VarBindingAST per 
+    la loro dichiarazione, alla classe VariableExprAST per poterli utilizzare nelle espressioni 
+    e alla classe AssignmentExprAST per poter effettuare gli assegnamenti.
+
+
+Istruzioni per l'utilizzo del codice:
+
+- Per generare il compilatore implementato attraverso l'eseguibile kcomp è sufficiente digitare:
+> make
+
+- Per provare il software generato è necessario spostarsi nella directory Test_progetto ed eseguire
+  il make del programma desiderato:
+> cd Test_progetto
+> make <nome programma>
+
+  oppure in alternativa generare tutti gli eseguibili:
+> cd Test_progetto
+> make all
+
+- L'eseguibile può essere testato nel modo seguente:
+> ./<nome_eseguibile> 
