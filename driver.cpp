@@ -430,10 +430,7 @@ Value* ForExprAST::codegen(driver& drv) {
        return nullptr;
 
     builder->CreateCondBr(CondV, BodyBB, EndBB);
-    
-    // Esattamente per la ragione spiegata sopra (ovvero il possibile inserimento
-    // di nuovi blocchi da parte della chiamata di codegen in Cond), andiamo ora
-    // a recuperare il blocco corrente 
+     
     CondBB = builder->GetInsertBlock();
     function->insert(function->end(), EndBB);
     

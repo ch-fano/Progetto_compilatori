@@ -5,7 +5,7 @@ fino al quarto livello.
 1) Grammatica di primo livello:
     Introduce le classi GlobalVarExprAST e AssignmentExprAST per la gestione, rispettivamente,
     della creazione di variabili globali e degli assegnamenti. Modifica inoltre la classe 
-    VariableExprAST per distinguere l'utilizzo di variabili globali da quello delle locali 
+    VariableExprAST per gestire lo scope delle variabili globali quando vengono utilizzate
     all'interno di un'espressione.
 
 2) Grammatica di secondo livello:
@@ -34,7 +34,7 @@ Istruzioni per l'utilizzo del codice:
 
   oppure in alternativa generare tutti gli eseguibili:
 > cd Test_progetto
-> make all
+> make
 
 - L'eseguibile può essere testato nel modo seguente:
 > ./<nome_eseguibile> 
